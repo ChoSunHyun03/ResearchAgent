@@ -28,3 +28,22 @@ npm run dev
 ```bash
 uvicorn backend.app.main:app --reload
 ```
+
+### GitHub 업로드
+
+변경된 파일 확인:
+```bash
+git status
+```
+변경사항 스테이징:
+```bash
+git add .
+```
+커밋 생성:
+```bash
+git commit -m "update README"
+```
+GitHub에 업로드:
+```bash
+git push
+```

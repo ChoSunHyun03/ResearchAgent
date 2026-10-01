@@ -1,0 +1,19 @@
+{
+  "company": "Example Company",
+  "position": "Example Position",
+  "responsibilities": [
+    "주요 업무 예시 1",
+    "주요 업무 예시 2"
+  ],
+  "requirements": [
+    "필수 역량 예시 1",
+    "필수 역량 예시 2"
+  ],
+  "preferred": [
+    "우대사항 예시 1"
+  ],
+  "keywords": [
+    "AI",
+    "Automation"
+  ]
+}

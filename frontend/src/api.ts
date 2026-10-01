@@ -13,3 +13,25 @@ export async function checkHealth() {
     }
     return response.json();
 }
+
+export async function analyzeJob(jobText: string) {
+    const response = await fetch(
+        `${API_BASE_URL}//api/jobs/analyze`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": 'application/json',
+            },
+
+            body: JSON.stringify({
+                job_text: jobText,
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("채용공고 분석에 실패했습니다.");
+    }
+
+    return response.json();
+}

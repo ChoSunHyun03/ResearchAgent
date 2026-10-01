@@ -67,3 +67,64 @@ AI
 
 Search
 - Web Search API
+
+---
+
+## Day 1 - Project Setup
+
+### 목표
+React + FastAPI 개발 환경 구성 및 통신 확인
+
+### 구현
+- React + TypeScript + Vite 세팅
+- FastAPI 세팅
+- `/health` API 생성
+- Frontend ↔ Backend 통신 확인
+- Git / GitHub 연결
+
+---
+
+## Day 2 - Job Posting Analyzer
+
+### 목표
+
+채용공고 텍스트를 입력하면
+구조화된 JobAnalysis 결과를 반환한다.
+
+### 현재 구현 방식
+
+LLM API 비용 문제로 실제 API 호출 대신
+별도의 Mock JSON 데이터를 사용한다.
+
+Mock 데이터는 실제 서비스 데이터와 분리하여
+`mock_data/` 폴더에 저장한다.
+
+해당 폴더는 GitHub에는 업로드하지 않으며,
+데이터 구조를 확인할 수 있도록
+`mock_data.example.json`만 Repository에 포함한다.
+
+### Workflow
+
+React
+→ FastAPI
+→ analyze_job()
+→ Mock JSON
+→ JobAnalysis
+→ React Result
+
+### 분석 항목
+
+- 회사명
+- 직무명
+- 주요 업무
+- 필수 역량
+- 우대사항
+- 핵심 키워드
+
+### 추후 개선
+
+Mock 데이터 대신 LLM API를 연결하여
+실제 채용공고를 동적으로 분석하도록 변경한다.
+
+---
+

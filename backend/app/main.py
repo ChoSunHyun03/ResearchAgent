@@ -2,6 +2,10 @@ from fastapi import FastAPI
 # React와 FastAPI가 서로 다른 주소(port)를 사용할 때 브라우저가 API 요청을 허용할 수 있도록 CORS 설정
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.app.models import JobInput, JobAnalysis
+from backend.app.research import analyze_job
+
+
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
 app = FastAPI(
     title="Company Research Agent API",
@@ -27,3 +31,10 @@ def health_check():
         "message":"Company Research Agent API is runnung"
     }
 
+
+@app.post("/api/jobs/analyze", response_model=JobAnalysis)
+def analyze_job_posting(job: JobInput):
+    """
+    프론트엔드에서 전달받은 채용공고를 분석한다. 
+    """
+    return analyze_job(job.job_text)

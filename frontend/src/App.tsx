@@ -1,15 +1,28 @@
 import {useState} from "react";
 // api.ts에서 만든 analyzeJob 함수를 가져옴
-import {analyzeJob} from "./api";
+import {analyzeJob, createResearchPlan } from "./api";
 
 interface JobAnalysis {
   company: string;
   position: string;
-  reponsibilities: string[];
+  responsibilities: string[];
   requirements: string[];
   preferred: string[];
   keywords: string[];
 }
+
+interface ResearchQuery{
+  topic: string;
+  query: string;
+  reason: string;
+}
+
+interface ResearchPlan {
+  company: string;
+  position: string;
+  queries: ResearchQuery[];
+}
+
 
 // React의 메인 컴포넌트
 // 현재 화면에 표시되는 UI를 담당함
@@ -18,12 +31,14 @@ function App() {
   const [result, setResult] = useState<JobAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
 
   const handleAnalyze = async() => {
     try{
       setLoading(true);
       setError("");
       setResult(null);
+      setResearchPlan(null);
 
       const data = await analyzeJob(jobText);
 
@@ -36,6 +51,26 @@ function App() {
       setLoading(false);
     }
   };
+
+  const handleCreateResearchPlan = async() => {
+    if (!result) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const plan = await createResearchPlan(result);
+      setResearchPlan(plan);
+
+    } catch {
+      setError("Research Plan 생성에 실패했습니다.");
+    
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main>
@@ -78,11 +113,11 @@ function App() {
 
             <h3>주요 업무</h3>
             <ul>
-              {result.reponsibilities.map((item, index) => (
+              {result.responsibilities.map((item, index) => (
                 <li key={index}>{item}</li>
               ))}
             </ul>
-            
+      
             <h3>필수 역량</h3>
             <ul>
               {result.requirements.map((item, index) => (
@@ -103,8 +138,44 @@ function App() {
                 <li key={index}>{item}</li>
               ))}
             </ul>
+
+            <button
+              onClick={handleCreateResearchPlan}
+              disabled={loading}
+            >
+              {loading ? "생성 중 ..." : "Research Plan 생성"}
+            </button>
           </section>
         )}
+
+        {researchPlan &&(
+          <section>
+            <h2>Research Plan</h2>
+
+            <p>
+              <strong>기업:</strong> {researchPlan.company}
+            </p>
+            <p>
+              <strong>직무:</strong> {researchPlan.position}
+            </p>
+
+            {researchPlan.queries.map((item,index)  => (
+              <div key={index}>
+                <h3>
+                  {index + 1}. {item.topic}
+                </h3>
+                
+                <p>
+                  <strong>검색어:</strong> {item.query}
+                </p>
+                <p>
+                  <strong>조사 이유:</strong> {item.reason}
+                </p>
+              </div>
+            ))}
+          </section>
+        )}
+
     </main>
   );
 }

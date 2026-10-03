@@ -125,6 +125,44 @@ React
 
 Mock 데이터 대신 LLM API를 연결하여
 실제 채용공고를 동적으로 분석하도록 변경한다.
-
 ---
 
+## Day 3 - Research Planner
+
+### 목표
+
+JobAnalysis 결과를 기반으로
+지원자가 추가로 조사해야 할 기업 및 직무 정보를 정의하고
+검색 Query를 생성한다.
+
+### Workflow
+
+JobAnalysis
+→ create_research_plan()
+→ ResearchPlan
+→ ResearchQuery
+→ Frontend 출력
+
+### Research Query 구성
+
+- topic: 조사 분야
+- query: 실제 검색에 사용할 검색어
+- reason: 해당 정보를 조사해야 하는 이유
+
+### 현재 구현 방식
+
+LLM API 대신 회사명, 직무명, 핵심 키워드를 이용해
+규칙 기반으로 Research Query를 생성한다.
+
+### 현재 Research Topic
+
+- 회사 주요 사업
+- 지원 직무
+- 핵심 기술
+- 최근 뉴스
+- 기업 전략
+
+### 다음 단계
+
+Day 4에서 생성된 Research Query를 실제 웹 검색과 연결하고,
+채용공고 URL에서 본문을 가져오는 방식도 함께 검토한다.

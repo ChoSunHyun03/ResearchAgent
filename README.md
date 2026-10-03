@@ -25,6 +25,17 @@ npm run dev
 
 ### Backend
 
+가상환경 실행 및 비활성화:
+```bash
+# 가상환경 실행
+source .venv/bin/activate
+# Python venv 비활성화
+deactivate
+
+# Conda 환경 비활성화
+conda deactivate
+```
+
 ```bash
 uvicorn backend.app.main:app --reload
 ```

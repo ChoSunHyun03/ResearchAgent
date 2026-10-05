@@ -1,6 +1,6 @@
 import {useState} from "react";
 // api.ts에서 만든 analyzeJob 함수를 가져옴
-import {analyzeJob, createResearchPlan } from "./api";
+import {analyzeJob, createResearchPlan,runWebResearch } from "./api";
 
 interface JobAnalysis {
   company: string;
@@ -23,6 +23,24 @@ interface ResearchPlan {
   queries: ResearchQuery[];
 }
 
+interface SearchResult{
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+interface ResearchResult{
+  topic: string;
+  query: string;
+  reason: string;
+  results: SearchResult[];
+}
+
+interface WebResearch{
+  company: string;
+  position: string;
+  research_results: ResearchResult[];
+}
 
 // React의 메인 컴포넌트
 // 현재 화면에 표시되는 UI를 담당함
@@ -32,6 +50,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
+  const [webResearch, setWebResearch] = useState<WebResearch | null>(null);
 
   const handleAnalyze = async() => {
     try{
@@ -39,6 +58,8 @@ function App() {
       setError("");
       setResult(null);
       setResearchPlan(null);
+      setResearchPlan(null);
+      setWebResearch(null);
 
       const data = await analyzeJob(jobText);
 
@@ -71,6 +92,25 @@ function App() {
       setLoading(false);
     }
   }
+
+  const handleRunWebResearch = async() => {
+    if (!researchPlan) {
+      return;
+    }
+
+    try{
+      setLoading(true);
+      setError("");
+
+      const data = await runWebResearch(researchPlan);
+
+      setWebResearch(data);
+    } catch{
+      setError("웹 리서치에 실패했습니다.");
+    }finally{
+      setLoading(false);
+    }
+  };
 
   return (
     <main>
@@ -173,9 +213,49 @@ function App() {
                 </p>
               </div>
             ))}
+            <button
+              onClick={handleRunWebResearch}
+              disabled={loading}
+            >
+              {loading ? "검색 중..." : "웹 리서치 시작"}
+            </button>
           </section>
         )}
 
+        {webResearch && (
+          <section>
+            <h2>Web Research</h2>
+
+            {webResearch.research_results.map((research,index) => (
+              <div key={index}>
+
+                <h3>
+                  {index + 1}. {research.topic}
+                </h3>
+
+                <p>
+                  <strong>검색어:</strong> {research.query}
+                </p>
+
+                {research.results.map((result, resultIndex) => (
+                  <div key={resultIndex}>
+
+                    <h4>{result.title}</h4>
+                    <p>{result.snippet}</p>
+
+                    <a
+                      href={result.url}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      출처 보기
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </section>
+        )}
     </main>
   );
 }

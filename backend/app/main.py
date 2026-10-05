@@ -2,8 +2,16 @@ from fastapi import FastAPI
 # React와 FastAPI가 서로 다른 주소(port)를 사용할 때 브라우저가 API 요청을 허용할 수 있도록 CORS 설정
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.models import JobInput, JobAnalysis, ResearchPlan
-from backend.app.research import analyze_job, create_research_plan
+from backend.app.models import (
+    JobInput, 
+    JobAnalysis, 
+    ResearchPlan,
+    WebResearch,)
+
+from backend.app.research import (
+    analyze_job, 
+    create_research_plan,
+    run_web_research,)
 
 
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
@@ -46,3 +54,11 @@ def generate_research_plan(job_analysis: JobAnalysis):
     기업 및 직무 Research Plan을 생성
     """
     return create_research_plan(job_analysis)
+
+@app.post("/api/research/search",response_model=WebResearch)
+def search_research_plan(research_plan: ResearchPlan):
+    """
+    Research Plan을 기반으로 실제 웹 검색을 수행한다.
+    """
+
+    return run_web_research(research_plan)

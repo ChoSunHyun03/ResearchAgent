@@ -54,3 +54,24 @@ export async function createResearchPlan(jobAnalysis: object) {
 
     return response.json();
 }
+
+export async function runWebResearch(researchPlan: object) {
+    const response = await fetch(
+        '${API_BASE_URL/api/research/search',
+        {
+            method: "POST",
+
+            headers:{
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(researchPlan),
+        }
+    );
+
+    if(!response.ok){
+        throw new Error("웹 리서치에 실패했습니다.");
+    }
+    
+    return response.json();
+}

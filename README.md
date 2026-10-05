@@ -58,3 +58,13 @@ GitHub에 업로드:
 ```bash
 git push
 ```
+
+## Development Status
+
+- [x] Day 1 - Project Setup
+- [x] Day 2 - Job Posting Analyzer
+- [x] Day 3 - Research Planner
+- [x] Day 4 - Web Research
+- [ ] Day 5 - Research Report
+- [ ] Day 6 - UI Improvement
+- [ ] Day 7 - Evaluation

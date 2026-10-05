@@ -1,7 +1,14 @@
 import json
 from pathlib import Path
 
-from backend.app.models import (JobAnalysis, ResearchPlan, ResearchQuery)
+from backend.app.models import (
+    JobAnalysis, 
+    ResearchPlan, 
+    ResearchQuery,
+    ResearchResult,
+    WebResearch,)
+
+from backend.app.search import search_web
 
 # 지금은 실제 OpenAI API를 호출하지 않고 Mock 데이터를 사용
 USE_MOCK = True
@@ -89,4 +96,32 @@ def create_research_plan(job_analysis):
         company = company,
         position = position,
         queries = queries
+    )
+
+def run_web_research(research_plan: ResearchPlan) -> WebResearch:
+    """
+    Research Plan의 각 Query를 실제 웹 검색과 연결한다.
+    """
+
+    research_results = []
+
+    for research_query in research_plan.queries:
+        results = search_web(
+            research_query.query,
+            max_results = 3,
+        )
+
+        research_results.append(
+            ResearchResult(
+                topic=research_query.topic,
+                query=research_query.query,
+                reason=research_query.reason,
+                results=results,
+            )
+        )
+
+    return WebResearch(
+        company=research_plan.company,
+        position=research_plan.position,
+        research_results=research_results,
     )

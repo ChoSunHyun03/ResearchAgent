@@ -166,3 +166,44 @@ LLM API 대신 회사명, 직무명, 핵심 키워드를 이용해
 
 Day 4에서 생성된 Research Query를 실제 웹 검색과 연결하고,
 채용공고 URL에서 본문을 가져오는 방식도 함께 검토한다.
+
+---
+
+## Day 4 - Web Research
+
+### 목표
+
+Day 3에서 생성한 Research Query를
+실제 웹 검색과 연결한다.
+
+### Workflow
+
+ResearchPlan
+→ ResearchQuery
+→ Web Search
+→ SearchResult
+→ WebResearch
+→ Frontend 출력
+
+### 검색 결과 구성
+
+- title
+- url
+- snippet
+
+### 구현 방식
+
+외부 유료 Search API 대신
+API Key 없이 사용할 수 있는 DDGS 기반 검색을 사용한다.
+
+각 Research Query당 최대 3개의 검색 결과를 수집한다.
+
+### 현재 한계
+
+검색 결과의 제목, URL, 요약만 수집하며
+각 웹페이지의 본문 전체는 아직 분석하지 않는다.
+
+### 다음 단계
+
+Day 5에서 검색 결과를 기반으로
+지원자가 활용할 수 있는 Research Report를 생성한다.

@@ -31,3 +31,23 @@ class ResearchPlan (BaseModel) :
 
     # 여러 개의 ResearchQuery를 저장
     queries : list[ResearchQuery]
+
+# 하나의 웹 검색 결과
+class SearchResult(BaseModel) :
+    title : str
+    url : str
+    snippet : str
+
+# 하나의 Research Query에 대한 검색 결과
+class ResearchResult(BaseModel) :
+    topic : str
+    query : str
+    reason : str
+    results : list[SearchResult]
+
+# 전체 웹 리서치 결과
+class WebResearch(BaseModel) :
+    company : str
+    position : str 
+    research_results : list[ResearchResult]
+

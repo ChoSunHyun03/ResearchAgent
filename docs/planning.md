@@ -259,3 +259,61 @@ LLM API 연결 시 다음 기능을 추가한다.
 - 신뢰도 높은 출처 우선 정리
 - 지원 직무와 연결된 핵심 인사이트 생성
 - 지원동기 및 면접 준비에 활용 가능한 정보 추출
+
+---
+
+## Day 6 - Input & UX Improvement
+
+### 목표
+
+기존 Research Agent Workflow를
+실제 사용 가능한 형태로 개선한다.
+
+### 주요 구현
+
+- 채용공고 URL 입력 기능 추가
+- URL 페이지 텍스트 추출
+- 직접 텍스트 입력 방식 유지
+- 검색 결과가 없는 경우 예외 처리
+- 사용자 친화적인 Research Topic 이름 적용
+- 기본 UI 구조 개선
+
+### URL Workflow
+
+Job Posting URL
+→ requests
+→ BeautifulSoup
+→ Text Extraction
+→ Job Analysis
+
+### Fallback
+
+일부 채용사이트는 JavaScript 기반으로
+본문을 렌더링하기 때문에
+requests 방식으로 내용을 가져오지 못할 수 있다.
+
+이 경우 사용자가 채용공고 텍스트를
+직접 입력할 수 있도록 기존 입력 방식을 유지한다.
+
+### UX Improvement
+
+- API 요청 중 loading 상태 표시
+- API 단계별 error message 적용
+- 검색 결과가 없는 경우 별도 메시지 출력
+- Research Topic 이름을 사용자 친화적인 한글로 변환
+- 각 기능 영역을 section 단위로 분리
+
+### 현재 한계
+
+- JavaScript 기반 동적 페이지 수집 제한
+- 로그인 필요 페이지 수집 불가
+- 사이트별 HTML 구조 최적화 미적용
+- 현재 Job Analysis는 Mock Data 기반
+
+### 추후 개선
+
+- Playwright 또는 Selenium 적용
+- 채용사이트별 Parser 구현
+- 실제 LLM API 연동
+- 검색 결과 신뢰도 평가
+- 여러 출처 기반 통합 요약

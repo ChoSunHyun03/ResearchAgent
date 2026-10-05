@@ -1,0 +1,58 @@
+/* 전체 페이지 폭 제한 */
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* 각 기능 영역을 카드처럼 구분 */
+section {
+    margin-top: 32px;
+    padding: 24px;
+
+    border: 1px solid #ddd;
+    border-radius: 12px;
+}
+
+/* URL 입력창과 Text Area 공통 스타일 */
+input,textarea {
+    width: 100%;
+
+    /* padding이 width에 포함되도록 설정 */
+    box-sizing: border-box;
+
+    margin-top: 12px;
+    padding: 12px;
+}
+
+/* textarea 높이 */
+textarea{
+    min-height: 180px;
+
+    /* 사용자가 세로 방향으로 크기 조절 가능 */
+    resize: vertical;
+}
+
+/* 버튼 기본 스타일 */
+button {
+    margin-top: 12px;
+    padding: 10px 16px;
+
+    cursor: pointer;
+}
+
+/* 비활성화된 버튼 */
+button:disabled{
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* 링크가 너무 길어도 화면을 뚫고 나가지 않도록 처리 */
+a {
+    word-break: break-all;
+}
+
+/* 각 검색 결과 사이에 간격 추가 */
+section > div {
+    margin-top: 20px;
+}

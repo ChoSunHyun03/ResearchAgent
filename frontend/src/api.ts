@@ -30,7 +30,7 @@ export async function analyzeJob(jobText: string) {
     );
 
     if (!response.ok) {
-        throw new Error("채용공고 분석에 실패했습니다.");
+        throw new Error("채용공고 분석에 실패했습니다. 입력 데이터와 Backend 상태를 확인해주세요");
     }
 
     return response.json();
@@ -70,7 +70,7 @@ export async function runWebResearch(researchPlan: object) {
     );
 
     if(!response.ok){
-        throw new Error("웹 리서치에 실패했습니다.");
+        throw new Error("웹 검색 중 오류가 발생했습니다. 일부 검색어에서 결과가 없거나 검색 서비스 연결에 실패했을 수 있습니다.");
     }
     
     return response.json();
@@ -93,6 +93,31 @@ export async function createResearchReport(webResearch: object) {
 
     if (!response.ok){
         throw new Error("Research Report 생성에 실패했습니다.");
+    }
+
+    return response.json();
+}
+
+// 채용공고 URL을 Backend로 전달하여
+// 페이지의 텍스트 내용을 가져오는 함수
+export async function fetchJobPosting(jobUrl : string) {
+    const response = await fetch(
+        `${API_BASE_URL}/api/jobs/fetch`,
+        {
+            method : "POST",
+
+            headers : {
+                "Content-Type" : "application/json",
+            },
+
+            body : JSON.stringify({
+                job_url: jobUrl,
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("채용공고 URL을 불러오지 못했습니다.");
     }
 
     return response.json();

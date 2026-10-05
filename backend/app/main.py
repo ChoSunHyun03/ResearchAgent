@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.models import (
-    JobInput, 
+    JobInput,
+    JobUrlInput, 
     JobAnalysis, 
     ResearchPlan,
     WebResearch,
@@ -15,6 +16,7 @@ from backend.app.research import (
     run_web_research,
     create_research_report,)
 
+from backend.app.scraper import fetch_job_posting
 
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
 app = FastAPI(
@@ -73,3 +75,17 @@ def generate_research_report(web_research: WebResearch):
     """
 
     return create_research_report(web_research)
+
+@app.post("/api/jobs/fetch")
+def fetch_job_posting_api(job:JobUrlInput):
+    """
+    채용공고 URL을 받아
+    웹페이지의 텍스트 내용을 반환한다.
+    """
+
+    # HttpUrl 객체를 문자열로 반환
+    job_text = fetch_job_posting(
+        str(job.job_url)
+    )
+
+    return {"job_text": job_text}

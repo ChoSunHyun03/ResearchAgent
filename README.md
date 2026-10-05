@@ -66,5 +66,5 @@ git push
 - [x] Day 3 - Research Planner
 - [x] Day 4 - Web Research
 - [x] Day 5 - Research Report
-- [ ] Day 6 - UI & Input Improvement
+- [x] Day 6 - Input & UX Improvement
 - [ ] Day 7 - Evaluation & Documentation

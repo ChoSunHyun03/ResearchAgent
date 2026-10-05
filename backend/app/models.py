@@ -1,8 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 # 사용자가 입력한 채용 공공
 class JobInput(BaseModel):
     job_text: str
+
+# 채용공고 URL 입력
+class JobUrlInput(BaseModel):
+    # HttpUrl을 사용하면 잘못된 URL 형식을 FastAPI가 자동 검증함
+    job_url : HttpUrl
 
 # 채용공고 분석 결과
 class JobAnalysis (BaseModel):

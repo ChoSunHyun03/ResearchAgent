@@ -6,12 +6,14 @@ from backend.app.models import (
     JobInput, 
     JobAnalysis, 
     ResearchPlan,
-    WebResearch,)
+    WebResearch,
+    ResearchReport,)
 
 from backend.app.research import (
     analyze_job, 
     create_research_plan,
-    run_web_research,)
+    run_web_research,
+    create_research_report,)
 
 
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
@@ -62,3 +64,12 @@ def search_research_plan(research_plan: ResearchPlan):
     """
 
     return run_web_research(research_plan)
+
+@app.post("/api/research/report",response_model=ResearchReport)
+def generate_research_report(web_research: WebResearch):
+    """
+    웹 검색 결과를 받아
+    최종 Research Report를 생성한다.
+    """
+
+    return create_research_report(web_research)

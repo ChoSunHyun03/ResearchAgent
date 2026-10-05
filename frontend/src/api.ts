@@ -57,7 +57,7 @@ export async function createResearchPlan(jobAnalysis: object) {
 
 export async function runWebResearch(researchPlan: object) {
     const response = await fetch(
-        '${API_BASE_URL/api/research/search',
+        `${API_BASE_URL}/api/research/search`,
         {
             method: "POST",
 
@@ -73,5 +73,27 @@ export async function runWebResearch(researchPlan: object) {
         throw new Error("웹 리서치에 실패했습니다.");
     }
     
+    return response.json();
+}
+
+// Web Research 결과를 Bckend로 전달 -> 최종 Research Report 생성
+export async function createResearchReport(webResearch: object) {
+    const response = await fetch(
+        `${API_BASE_URL}/api/research/report`,
+        {
+            method : "POST",
+
+            headers:{
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(webResearch),
+        }
+    );
+
+    if (!response.ok){
+        throw new Error("Research Report 생성에 실패했습니다.");
+    }
+
     return response.json();
 }

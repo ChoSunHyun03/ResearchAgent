@@ -51,3 +51,20 @@ class WebResearch(BaseModel) :
     position : str 
     research_results : list[ResearchResult]
 
+# Research Report에서 사용할 하나의 출처 정보
+class ReportSource(BaseModel) :
+    title : str
+    url : str
+
+# 하나의 Research Topic을 정리한 Report Section
+class ReportSection(BaseModel) : 
+    topic : str
+    query : str
+    summary : list[str]
+    sources : list[ReportSource]
+
+# 최종 Research Report
+class ResearchReport(BaseModel) : 
+    company : str
+    position : str
+    sections : list[ReportSection]

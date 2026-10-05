@@ -6,7 +6,10 @@ from backend.app.models import (
     ResearchPlan, 
     ResearchQuery,
     ResearchResult,
-    WebResearch,)
+    WebResearch,
+    ResearchReport,
+    ReportSection,
+    ReportSource,)
 
 from backend.app.search import search_web
 
@@ -124,4 +127,52 @@ def run_web_research(research_plan: ResearchPlan) -> WebResearch:
         company=research_plan.company,
         position=research_plan.position,
         research_results=research_results,
+    )
+
+def create_research_report(web_research: WebResearch) -> ResearchReport:
+    """
+    WebResearch 결과를 기반으로 최종 Research Report를 생성
+
+    현재 LLM API를 사용하지 않기 때문에 
+    검색 결과를 snippet을 그대로 핵심 내용으로 활용
+    """
+
+    sections = []
+
+    for research_result in web_research.research_results:
+        summary = []
+        sources = []
+
+        # 하나의 Query에 대한 검색 결과를 순회
+        for search_result in research_result.results:
+
+            # 하나의 결과에 snippet이 존재하는 경우에만 추가
+            if search_result.snippet:
+                summary.append(search_result.snippet)
+
+            # 제목이나 URL이 있는 경우 출처로 저장
+            if search_result.title or search_result.url:
+                sources.append(
+                    ReportSource(
+                        title = search_result.title,
+                        url = search_result.url,
+                    )
+                )
+
+        # 하나의 Topic에 대한 Report Section 생성
+        section = ReportSection(
+            topic = research_result.topic,
+            query = research_result.query,
+            summary = summary,
+            sources = sources,
+        )
+
+        # 전체 Report Section 목록에 추가
+        sections.append(section)
+
+    # 최종 Research Report
+    return ResearchReport(
+        company = web_research.company,
+        position = web_research.position,
+        sections = sections,
     )

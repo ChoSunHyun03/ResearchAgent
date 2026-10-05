@@ -1,6 +1,6 @@
 import {useState} from "react";
 // api.ts에서 만든 analyzeJob 함수를 가져옴
-import {analyzeJob, createResearchPlan,runWebResearch } from "./api";
+import {analyzeJob, createResearchPlan,runWebResearch,createResearchReport } from "./api";
 
 interface JobAnalysis {
   company: string;
@@ -42,6 +42,24 @@ interface WebResearch{
   research_results: ResearchResult[];
 }
 
+interface ReportSource{
+  title : string;
+  url : string;
+}
+
+interface ReportSection{
+  topic : string;
+  query : string;
+  summary : string[];
+  sources : ReportSource[];
+}
+
+interface ResearchReport{
+  company : string;
+  position : string;
+  sections : ReportSection[];
+}
+
 // React의 메인 컴포넌트
 // 현재 화면에 표시되는 UI를 담당함
 function App() {
@@ -51,6 +69,7 @@ function App() {
   const [error, setError] = useState("");
   const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
   const [webResearch, setWebResearch] = useState<WebResearch | null>(null);
+  const [researchReport, setResearchReport] = useState<ResearchReport | null>(null);
 
   const handleAnalyze = async() => {
     try{
@@ -58,8 +77,8 @@ function App() {
       setError("");
       setResult(null);
       setResearchPlan(null);
-      setResearchPlan(null);
       setWebResearch(null);
+      setResearchReport(null);
 
       const data = await analyzeJob(jobText);
 
@@ -101,6 +120,7 @@ function App() {
     try{
       setLoading(true);
       setError("");
+      setResearchReport(null);
 
       const data = await runWebResearch(researchPlan);
 
@@ -108,6 +128,26 @@ function App() {
     } catch{
       setError("웹 리서치에 실패했습니다.");
     }finally{
+      setLoading(false);
+    }
+  };
+
+  const handleCreateResearchReport = async () => {
+    if (!webResearch){
+      return;
+    }
+
+    try{
+      setLoading(true);
+      setError("");
+      
+      // Backenddp Web Research 결과 전달
+      const report = await createResearchReport(webResearch);
+      // 반환된 Report 저장
+      setResearchReport(report);
+    } catch{
+      setError("Research Report 생성에 실패했습니다.");
+    } finally {
       setLoading(false);
     }
   };
@@ -254,8 +294,68 @@ function App() {
                 ))}
               </div>
             ))}
+            <button
+              onClick={handleCreateResearchReport}
+              disabled={loading}
+            >
+              {loading ? "Report 생성 중..." :" Research Report 생성"}
+            </button>
+          </section>  
+        )}
+
+        {researchReport && (
+          <section>
+
+            <h2>Research Report</h2>
+
+            <p>
+              <strong>기업:</strong> {" "}
+              {researchReport.position}
+            </p>
+
+            {/* Topic별 Report Section 출력 */}
+            {researchReport.sections.map((section, index) => (
+              <div key={index}>
+
+                <h3>
+                  {index + 1}.{section.topic}
+                </h3>
+
+                <p>
+                  <strong>검색 Query:</strong>{" "}
+                  {section.query}
+                </p>
+
+                <h4>핵심 내용</h4>
+
+                <ul>
+                  {section.summary.map((summary, summaryIndex) => (
+                    <li key={summaryIndex}>
+                      {summary}
+                    </li>
+                  ))}
+                </ul>
+
+                <h4>출처</h4>
+
+                <ul>
+                  {section.sources.map((source, sourceIndex) => (
+                    <li key={sourceIndex}>
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {source.title || "출처 보기"}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
         )}
+      
     </main>
   );
 }

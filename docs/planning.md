@@ -207,3 +207,55 @@ API Key 없이 사용할 수 있는 DDGS 기반 검색을 사용한다.
 
 Day 5에서 검색 결과를 기반으로
 지원자가 활용할 수 있는 Research Report를 생성한다.
+
+---
+
+## Day 5 - Research Report
+
+### 목표
+
+Web Research 결과를 기반으로
+지원자가 기업 및 직무 조사에 활용할 수 있는
+Research Report를 생성한다.
+
+### Workflow
+
+WebResearch
+→ create_research_report()
+→ ResearchReport
+→ ReportSection
+→ Frontend 출력
+
+### Report 구성
+
+각 Report Section은 다음 정보를 포함한다.
+
+- topic
+- 검색 Query
+- 검색 결과 기반 핵심 내용
+- 출처
+
+### 현재 구현 방식
+
+LLM API를 사용하지 않기 때문에
+웹 검색 결과의 snippet을 기반으로
+주제별 정보를 구조화하여 Report를 생성한다.
+
+검색 결과에 존재하지 않는 내용을
+임의로 생성하지 않는다.
+
+### 현재 한계
+
+현재 Report는 검색 결과를 구조화하는 수준이며,
+여러 출처를 종합한 자연어 요약이나
+지원자 관점의 인사이트 생성은 수행하지 않는다.
+
+### 추후 개선
+
+LLM API 연결 시 다음 기능을 추가한다.
+
+- 여러 출처의 내용 통합 요약
+- 중복 정보 제거
+- 신뢰도 높은 출처 우선 정리
+- 지원 직무와 연결된 핵심 인사이트 생성
+- 지원동기 및 면접 준비에 활용 가능한 정보 추출

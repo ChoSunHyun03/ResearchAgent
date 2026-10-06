@@ -129,6 +129,8 @@ ResearchAgent/
 - 여러 출처 통합 요약
 - 지원자 관점 핵심 인사이트 생성
 
+---
+
 ### Frontend
 
 ```bash

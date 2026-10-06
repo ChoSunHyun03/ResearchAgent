@@ -412,29 +412,36 @@ function App() {
 
                 <h4>핵심 내용</h4>
 
-                <ul>
-                  {section.summary.map((summary, summaryIndex) => (
-                    <li key={summaryIndex}>
-                      {summary}
-                    </li>
-                  ))}
-                </ul>
-
+                {section.summary.length > 0 ? (
+                  <ul>
+                    {section.summary.map((summary, summaryIndex) => (
+                      <li key={summaryIndex}>
+                        {summary}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>정리할 수 있는 검색 결과가 없습니다.</p>
+                )}
                 <h4>출처</h4>
-
-                <ul>
-                  {section.sources.map((source, sourceIndex) => (
-                    <li key={sourceIndex}>
-                      <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {source.title || "출처 보기"}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                
+                {section.sources.length > 0 ? (
+                  <ul>
+                    {section.sources.map((source, sourceIndex) => (
+                      <li key={sourceIndex}>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {source.title || "출처 보기"}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>확인 가능한 출처가 없습니다.</p>
+                )}
               </div>
             ))}
           </section>

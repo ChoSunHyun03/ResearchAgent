@@ -1,6 +1,7 @@
 import requests
 
 from bs4 import BeautifulSoup
+from requests.exceptions import RequestException 
 
 def fetch_job_posting(url: str) -> str:
     """
@@ -23,17 +24,27 @@ def fetch_job_posting(url: str) -> str:
         )
     }
 
-    #URL에 GET 요청
-    response = requests.get(
-        url,
-        headers=headers,
-        timeout = 10,
-    )
+    try:
+        #URL에 GET 요청
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout = 10,
+        )
 
-    # HTTP 오류가 있으면 예외 발생
-    response.raise_for_status()
+        # HTTP 오류가 있으면 예외 발생
+        response.raise_for_status()
+    except RequestException as error:
+        # URL 연결 실패, DNS 오류, timeout, HTTP 오류 등을 처리
+        print (f"[채용공고 URL 요청 실패] {url}")
+        print(f"[오류 내용] {error}")
 
-    #HTML을 BeautifulSoup으로 파싱
+        #상위 FastAPI 코드에서 처리할 수 있도록 ValueError로 변환해서 전달
+        raise ValueError(
+            "채용공고 URL에 접속할 수 없습니다."
+        )
+    
+    #HTML을 BeautifulSoup으로 파싱 -> HTML 데이터 분석
     soup = BeautifulSoup(
         response.text,
         "html.parser",

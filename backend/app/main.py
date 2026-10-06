@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException
 # React와 FastAPI가 서로 다른 주소(port)를 사용할 때 브라우저가 API 요청을 허용할 수 있도록 CORS 설정
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -82,10 +82,18 @@ def fetch_job_posting_api(job:JobUrlInput):
     채용공고 URL을 받아
     웹페이지의 텍스트 내용을 반환한다.
     """
+    try: 
+        # HttpUrl 객체를 문자열로 반환
+        job_text = fetch_job_posting(
+            str(job.job_url)
+        )
 
-    # HttpUrl 객체를 문자열로 반환
-    job_text = fetch_job_posting(
-        str(job.job_url)
-    )
-
-    return {"job_text": job_text}
+        return {"job_text": job_text}
+    except ValueError as error:
+        # scraper.py에서 URL 접근 실패가 발생한 경우 
+        # 서버 내부 오류 500 대신
+        # 잘못된 요청이라는 의미의 400 응답을 반환
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )

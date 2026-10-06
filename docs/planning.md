@@ -317,3 +317,64 @@ requests 방식으로 내용을 가져오지 못할 수 있다.
 - 실제 LLM API 연동
 - 검색 결과 신뢰도 평가
 - 여러 출처 기반 통합 요약
+
+## Day 7 - Evaluation & Documentation
+
+### 목표
+
+1주 동안 개발한 Company Research Agent MVP를
+최종 테스트하고 프로젝트 구조와 한계점을 정리한다.
+
+### Final Workflow
+
+Job Posting URL / Text
+→ Job Analysis
+→ Research Plan
+→ Web Research
+→ Research Report
+
+### Test Cases
+
+#### 정상 URL
+
+URL에서 페이지 텍스트를 추출하고
+기존 Research Workflow까지 정상적으로 연결되는지 확인.
+
+#### 직접 텍스트 입력
+
+URL 수집이 불가능한 경우에도
+사용자가 직접 채용공고를 입력해
+전체 Workflow를 사용할 수 있는지 확인.
+
+#### 잘못된 URL
+
+잘못된 URL 입력 시
+서버가 종료되지 않고 사용자에게
+에러 메시지를 제공하는지 확인.
+
+#### 검색 결과 없음
+
+웹 검색 결과가 없더라도
+빈 리스트를 반환하고 전체 Workflow가
+중단되지 않는지 확인.
+
+### MVP 결과
+
+채용공고 입력부터 기업 리서치 결과 생성까지
+하나의 End-to-End Workflow를 구현했다.
+
+### 현재 한계
+
+- 실제 LLM API 미연동
+- Job Analysis Mock 기반
+- 동적 페이지 수집 제한
+- 검색 snippet 기반 Report
+- 출처 신뢰도 평가 미구현
+
+### 향후 개선 방향
+
+- 실제 LLM 기반 Job Analysis
+- Research Query 자동 생성
+- 검색 결과 통합 요약
+- 출처 신뢰도 점수화
+- 사용자 경험 기반 Research Insight 생성

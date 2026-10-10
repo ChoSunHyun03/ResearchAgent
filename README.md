@@ -196,3 +196,32 @@ GitHub에 업로드:
 ```bash
 git push
 ```
+---
+## STEP 2 — 실제 채용공고 분석
+
+기존 `/api/jobs/analyze`와 `JobAnalysis` 응답 형식을 유지합니다.
+
+- `USE_MOCK=true`: 기존 mock JSON 사용
+- `USE_MOCK=false`: OpenAI Structured Outputs 사용
+- 누락된 문자열 정보는 `""`, 목록 정보는 `[]`
+- 빈 입력과 20,000자 초과 입력은 거부
+- OpenAI 실패 시 mock으로 자동 전환하지 않음
+- Research Plan과 Report는 기존 방식 유지
+
+테스트:
+
+```bash
+python -m unittest discover -s backend/tests -p "test_*.py" -v
+```
+
+`.env` 변경 후에는 백엔드를 완전히 재시작합니다.
+
+### STEP 2 검증 결과
+
+| 항목 | 결과 |
+|---|---|
+| 자동 테스트 18개 | 통과 |
+| 정상·누락·짧은 공고·빈 입력 | 확인 결과 기록 |
+| 실제 공고 원문 대조 | 확인한 공고 수와 발견 사항 기록 |
+| mock 모드 회귀 | 확인 결과 기록 |
+| 분석→계획→검색→보고서 | 확인 결과 기록 |

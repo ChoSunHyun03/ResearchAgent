@@ -13,8 +13,18 @@ from backend.app.models import (
 
 from backend.app.search import search_web
 
+from backend.app.config import load_settings
+
+# OpenAI 호출은 별도 Provider에 맡김
+from backend.app.llm.openai_provider import(
+    JobAnalysisError,
+    analyze_job_with_openai,
+)
+
+"""
 # 지금은 실제 OpenAI API를 호출하지 않고 Mock 데이터를 사용
 USE_MOCK = True
+"""
 
 # 프로젝트 루트 위치
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -42,12 +52,35 @@ def analyze_job(job_text: str) -> JobAnalysis:
     """
     채용공고를 분석.
 
-    현재는 Mock 데이터를 반환하고,
-    추후 LLM API 호출 방식으로 교체한다.
+    입력을 검증하고 설정에 따라
+    mock 또는 OpenAI로 분석합니다.
     """
 
-    if USE_MOCK:
-        return load_mock_analysis("interx.json")
+    # 공백만 있는 입력도 실제 호출 전에 차단
+    cleaned_text = job_text.strip()
+
+    if not cleaned_text:
+        raise ValueError("채용공고 내용을 입력해주세요.")
+
+    # 현재 URL 수집기의 길이 제한과 동일하게 맞춤
+    # 직접 입력은 조용히 자르지 않고 오류로 안내
+    if len(cleaned_text) > 20000:
+        raise ValueError("채용공고는 20,000자 이하로 입력해주세요.")
+
+    settings = load_settings()
+
+    if settings.use_mock:
+        try:
+            # 기존 개발용 분석을 유지
+            return load_mock_analysis("interx.json")
+        except (OSError, ValueError):
+            raise JobAnalysisError(
+                "mock_data",
+                "mock 분석 파일의 위치와 JSON 구조를 확인해주세요.",
+            ) from None
+
+    # 실패하면 오류를 반환하며 mock으로 자동 전환하지 않음
+    return analyze_job_with_openai(cleaned_text, settings)
 
 def create_research_plan(job_analysis):
     """

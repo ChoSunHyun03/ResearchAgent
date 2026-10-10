@@ -18,6 +18,9 @@ from backend.app.research import (
 
 from backend.app.scraper import fetch_job_posting
 
+from backend.app.config import ConfigurationError
+from backend.app.llm.openai_provider import JobAnalysisError
+
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
 app = FastAPI(
     title="Company Research Agent API",
@@ -48,8 +51,43 @@ def health_check():
 def analyze_job_posting(job: JobInput):
     """
     프론트엔드에서 전달받은 채용공고를 분석한다. 
+    기존 분석 API를 유지하면서 오류 유형을 구분합니다.
     """
-    return analyze_job(job.job_text)
+    try:
+        return analyze_job(job.job_text)
+
+    except ConfigurationError as error:
+        # 서버 설정 문제를 입력 오류와 구분
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from None
+
+    except JobAnalysisError as error:
+        # Provider는 오류 유형만 정의하고 HTTP 변환은 여기서 진행
+        status_codes ={
+            "timeout" : 504,
+            "rate_limit" : 503,
+            "authentication": 503,
+            "connection" : 503,
+            "upstream" : 502,
+            "invalid_output": 502,
+            "refusal": 422,
+            "mock_data": 500,
+        }
+
+        raise HTTPException(
+            status_code=status_codes.get(error.kind, 502),
+            detail=str(error),
+        ) from None
+
+    except ValueError as error:
+        # 빈 공고·길이 초과 등 사용자 입력 오류 
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from None
+
 
 @app.post("/api/research/plan", response_model=ResearchPlan)
 def generate_research_plan(job_analysis: JobAnalysis):

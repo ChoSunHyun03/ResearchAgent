@@ -1,0 +1,13 @@
+# API 서버와 데이터 검증
+fastapi==0.142.1
+uvicorn==0.54.0
+pydantic==2.13.5
+
+# 기존 웹 검색과 HTML 수집
+ddgs==9.16.0
+requests==2.34.2
+beautifulsoup4==4.15.0
+
+# OpenAI 호출과 루트 .env 로딩
+openai==3.22.1
+python-dotenv==1.2.3

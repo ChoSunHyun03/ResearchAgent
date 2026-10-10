@@ -378,3 +378,36 @@ URL 수집이 불가능한 경우에도
 - 검색 결과 통합 요약
 - 출처 신뢰도 점수화
 - 사용자 경험 기반 Research Insight 생성
+---
+## STEP 1 — OpenAI 환경 구성
+
+### 범위
+
+- 백엔드 의존성 명세 작성
+- 프로젝트 루트 `.env` 로딩
+- 시스템 환경변수 우선 적용
+- Key·모델 설정 검증
+- OpenAI 클라이언트 생성 함수 분리
+- 외부 API 호출 없이 환경설정 테스트
+
+### 유지하는 기능
+
+- 기존 FastAPI endpoint
+- 기존 mock Job Analysis
+- 규칙 기반 Research Plan
+- DDGS 검색
+- snippet 기반 Research Repodrt
+- 기존 프론트엔드
+
+### 아직 구현하지 않은 기능
+
+- 실제 OpenAI Job Analysis
+- LLM Research Planning 및 Report 요약
+- Ollama Provider
+- LangGraph 및 MCP
+
+### 검증 기록
+
+- 환경설정 테스트: 실행 후 결과 기록
+- health endpoint: 실행 후 결과 기록
+- 기존 mock 분석: 실행 후 결과 기록

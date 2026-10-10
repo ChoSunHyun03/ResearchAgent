@@ -140,6 +140,29 @@ npm run dev
 
 ### Backend
 
+#### OpenAI 환경 준비
+프로젝트 루트에서 가상환경을 활성화하고 의존성을 설치합니다.
+
+    source .venv/bin/activate
+    python -m pip install -r requirements.txt
+
+루트 `.env`에 다음 설정을 작성합니다.
+
+    USE_MOCK=true
+    LLM_PROVIDER=openai
+    OPENAI_API_KEY=
+    OPENAI_MODEL=
+
+실제 API Key는 로컬 `.env`에만 입력합니다.
+`.env.example`에는 실제 Key를 넣지 않습니다.
+
+설정 테스트:
+
+    python -m unittest discover -s backend/tests -p "test_*.py" -v
+
+환경 로딩·검증과 클라이언트 생성 함수를 준비합니다.
+현재 Job Analysis는 기존 mock을 사용하며 실제 OpenAI 요청은 하지 않습니다.
+
 가상환경 실행 및 비활성화:
 ```bash
 # 가상환경 실행

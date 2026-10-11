@@ -21,6 +21,10 @@ from backend.app.llm.openai_provider import(
     analyze_job_with_openai,
 )
 
+from backend.app.llm.research_planner import (
+    create_research_plan_with_openai,
+)
+
 """
 # 지금은 실제 OpenAI API를 호출하지 않고 Mock 데이터를 사용
 USE_MOCK = True
@@ -82,7 +86,31 @@ def analyze_job(job_text: str) -> JobAnalysis:
     # 실패하면 오류를 반환하며 mock으로 자동 전환하지 않음
     return analyze_job_with_openai(cleaned_text, settings)
 
-def create_research_plan(job_analysis):
+def create_research_plan(job_analysis: JobAnalysis) -> ResearchPlan:
+    """
+    설정에 따라 LLM 또는 기존 규칙 기반 계획을 생성합니다.
+    """
+
+    # 대상이 불명확한 상태로 다른 회사 정보를 조사하지 않게 주의
+    # 누락 시 공고를 보완하고 다시 분석 
+    if(
+        not job_analysis.company.strip()
+        or not job_analysis.position.strip()
+    ) : 
+        raise ValueError(
+            "회사명과 직무명이 있는 분석 결과가 필요합니다."
+        )
+
+    settings = load_settings()
+
+    # LLM 플래너가 꺼져 있으면 기존 규칙 기반 계획을 생성
+    if not settings.use_llm_planner:
+        return create_rule_based_research_plan(job_analysis)
+
+    # LLM 플래너가 켜져 있으면 openAI로 계획을 생성
+    return create_research_plan_with_openai(job_analysis, settings)
+
+def create_rule_based_research_plan(job_analysis: JobAnalysis) -> ResearchPlan:
     """
     공고 분석 결과를 기반으로 
     어떤 내용을 조사할 지 Research Plan을 생성

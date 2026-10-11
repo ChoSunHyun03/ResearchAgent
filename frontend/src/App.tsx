@@ -138,6 +138,10 @@ function App() {
     try {
       setLoading(true);
       setError("");
+      // 계획이 바뀌면 이전 검색·보고서를 함께 사용하지 않음
+      setResearchPlan(null);
+      setWebResearch(null);
+      setResearchReport(null);
 
       const plan = await createResearchPlan(result);
       setResearchPlan(plan);

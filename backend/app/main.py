@@ -21,6 +21,8 @@ from backend.app.scraper import fetch_job_posting
 from backend.app.config import ConfigurationError
 from backend.app.llm.openai_provider import JobAnalysisError
 
+from backend.app.llm.research_planner import ResearchPlanError
+
 # FastAPI 애플리케이션 생성 -> 앞으로 API들은 모두 이 app에 등록
 app = FastAPI(
     title="Company Research Agent API",
@@ -95,7 +97,38 @@ def generate_research_plan(job_analysis: JobAnalysis):
     채용공고 분석 결과를 기반으로
     기업 및 직무 Research Plan을 생성
     """
-    return create_research_plan(job_analysis)
+
+    try:
+        return create_research_plan(job_analysis)
+    
+    except ConfigurationError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from None
+
+    except ResearchPlanError as error:
+        status_codes = {
+            "timeout": 504,
+            "rate_limit": 503,
+            "authentication": 503,
+            "connection": 503,
+            "upstream": 502,
+            "invalid_output": 502,
+            "refusal": 422
+        }
+
+        raise HTTPException(
+            status_code=status_codes.get(error.kind, 502),
+            detail=str(error),
+        ) from None
+
+    except ValueError as error:
+        # 회사명·직무명이 없는 입력 등을 처리
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from None
 
 @app.post("/api/research/search",response_model=WebResearch)
 def search_research_plan(research_plan: ResearchPlan):

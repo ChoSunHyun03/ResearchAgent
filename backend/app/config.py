@@ -51,6 +51,9 @@ class Settings:
 
     openai_model : str
 
+    # 기존 Settings 생성 코드와 테스트를 유지하도록 기본값을 둠
+    use_llm_planner: bool = False
+
     def validate_openai(self) -> None:
         """
         OpenAI 클라이언트를 만들기 전에 필요한 설정을 검증합니다.
@@ -108,5 +111,11 @@ def load_settings() -> Settings:
         llm_provider=llm_provider,
         openai_api_key=os.getenv("OPENAI_API_KEY","").strip(),
         openai_model=os.getenv("OPENAI_MODEL","").strip(),
+
+        # 분석 모드와 별도로 Palnner만 전환
+        use_llm_planner=parse_bool(
+            os.getenv("USE_LLM_PLANNER", "false"),
+            "USE_LLM_PLANNER",
+        ),
     )
 

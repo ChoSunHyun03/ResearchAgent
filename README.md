@@ -27,10 +27,10 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 | 단계 | 구현 방식 |
 |---|---|
 | 채용공고 입력 | URL 입력 또는 직접 텍스트 입력 |
-| URL 텍스트 추출 | requests + BeautifulSoup |
+| URL 텍스트 추출 | 공개 주소 검증 + urllib3 + BeautifulSoup |
 | Job Analysis | OpenAI Structured Outputs 또는 개발용 mock |
 | Research Plan | OpenAI Structured Outputs 또는 규칙 기반 검색어 생성 |
-| Web Research | DDGS 웹 검색 |
+| Web Research | DDGS 웹 검색 및 선택적 HTML 본문 수집 |
 | Research Report | 검색 snippet과 출처를 주제별로 정리 |
 
 ### 완료한 개선
@@ -39,6 +39,7 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 - STEP 2: 실제 채용공고의 구조화 분석
 - STEP 3: 설정으로 선택하는 LLM Research Planner
 - STEP 4: 검색 결과 정제·주제별 상태 구분·평가용 예제 준비
+- STEP 5: 제한된 페이지 본문 수집과 실패 시 snippet 유지
 
 ### 아직 구현하지 않은 기능
 
@@ -63,6 +64,7 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 직접 입력한 채용공고 텍스트 ┘
 → Research Plan
 → Web Research
+→ 페이지 본문 수집 (선택)
 → Research Report
 ```
 
@@ -114,7 +116,8 @@ HTTP 요청 처리, 리서치 로직, 외부 API 호출, 데이터 모델을 분
 - 채용공고 텍스트 직접 입력
 - URL에서 추출한 텍스트를 화면에서 확인하고 편집 가능
 
-URL 수집은 requests와 BeautifulSoup을 사용합니다.
+URL 수집은 공개 주소 검증 후 urllib3와 BeautifulSoup을 사용합니다.
+본문 영역을 우선하며 공고 입력에는 최대 20,000자를 반환합니다.
 JavaScript 렌더링이나 로그인이 필요한 페이지는 수집이 제한될 수 있습니다.
 
 ### 5.2 Job Analysis
@@ -190,7 +193,35 @@ DDGS로 검색어별 최대 여섯 개의 후보를 요청하고, 정제 후 최
 DDGS가 예외를 반환한 경우 실제로 정보가 없는지 단정하지 않고 오류로 표시합니다.
 
 검색 결과 정제는 관련성 판정이나 출처 사실 검증이 아닙니다.
-외부 검색 결과에 대한 본문 수집과 출처 분석은 다음 STEP에서 진행합니다.
+검색 결과 화면의 **페이지 본문 수집** 버튼은 `POST /api/research/collect`를 호출합니다.
+검색 결과의 기존 제목·URL·snippet을 유지하며 선택적 `page` 객체를 추가합니다.
+
+| page 필드 | 의미 |
+|---|---|
+| status | success / error / skipped |
+| text, title | 추출한 본문과 HTML 제목 |
+| final_url | 리다이렉트 후 최종 URL |
+| fetched_at | 성공한 수집 시각 (UTC) |
+| truncated | 본문 길이 제한 적용 여부 |
+| error_kind, error_message | 실패·생략 이유 |
+
+`page=null`이면 아직 본문을 수집하지 않은 결과입니다.
+주제별 검색 상태와 페이지별 수집 상태는 서로 독립적입니다.
+검색에 성공해도 해당 페이지 접근은 실패할 수 있습니다.
+
+수집 제한은 요청당 고유 URL 최대 10개, 리다이렉트 최대 3회,
+페이지별 전송·압축 해제 HTML 각각 1,000,000바이트, 본문 최대 12,000자입니다.
+같은 요청의 URL 중복은 수집 결과를 재사용합니다. 실패한 페이지의 snippet은 유지합니다.
+페이지별 8초·전체 45초의 진행 예산과 연결·읽기 timeout을 적용하지만,
+운영체제 DNS 조회와 블로킹 읽기 때문에 전체 요청 시간이 정확히 그 안에 끝나는 것은 아닙니다.
+
+HTTP(S)의 80·443 포트, 공개 IP만 허용하고 리다이렉트마다 다시 검증합니다.
+검증한 IP로 직접 연결하며 HTTPS 인증서와 SNI는 원래 호스트 이름을 사용합니다.
+HTML과 gzip을 지원하고 PDF·로그인·JavaScript 렌더링·기타 압축 형식은 지원하지 않습니다.
+사이트에 따라 본문 추출이 불완전할 수 있습니다. 환경변수 HTTP 프록시는 사용하지 않습니다.
+
+현재 보고서는 계속 검색 snippet을 사용합니다.
+수집 본문은 화면에서 확인할 수 있고 STEP 7의 LLM Report 입력으로 활용할 예정입니다.
 
 ### 5.5 Research Report
 
@@ -215,7 +246,7 @@ DDGS가 예외를 반환한 경우 실제로 정보가 없는지 단정하지 �
 | 채용공고 분석 | OpenAI Python SDK, Structured Outputs |
 | 환경설정 | python-dotenv, dataclass |
 | 검색 | DDGS |
-| 페이지 수집 | requests, BeautifulSoup |
+| 페이지 수집 | urllib3, BeautifulSoup |
 | 자동 테스트 | unittest, unittest.mock |
 
 백엔드 직접 의존성 버전은 `requirements.txt`에 기록합니다.
@@ -245,8 +276,11 @@ ResearchAgent/
 │       ├── test_research_plan.py
 │       ├── test_search.py
 │       ├── test_web_research.py
+│       ├── test_scraper.py
+│       ├── test_source_collection.py
 │       └── fixtures/
-│           └── search_cases.json
+│           ├── search_cases.json
+│           └── source_page.html
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx
@@ -285,7 +319,7 @@ ResearchAgent/
 | research_planner.py | LLM 조사 계획 생성과 결과 검증 |
 | prompts.py | 분석·계획 생성 프롬프트 |
 | search.py | DDGS 검색 |
-| scraper.py | URL에서 텍스트 추출 |
+| scraper.py | 공개 주소 검증·제한된 HTML 수집·본문 추출 |
 | App.tsx | 입력·결과 화면과 단계별 실행 |
 | api.ts | 프론트엔드의 API 요청 |
 | planning.md | 개발 과정과 검증 기록 |
@@ -417,6 +451,7 @@ Vite가 출력한 주소로 접속합니다.
 | POST | /api/jobs/analyze | 채용공고 분석 |
 | POST | /api/research/plan | 리서치 계획 생성 |
 | POST | /api/research/search | 웹 검색 실행 |
+| POST | /api/research/collect | 검색 결과의 페이지 본문 수집 |
 | POST | /api/research/report | 보고서 생성 |
 
 ### 분석 요청 예시
@@ -455,7 +490,7 @@ source .venv/bin/activate
 python -m unittest discover -s backend/tests -p "test_*.py" -v
 ```
 
-현재 자동 테스트는 총 40개입니다.
+현재 자동 테스트는 총 64개입니다.
 
 | 파일 | 개수 | 주요 검증 |
 |---|---:|---|
@@ -464,8 +499,10 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 | test_research_plan.py | 9 | 계획 생성 분기, 원본 정보 유지, 개수·공백·중복 검증, 구조화 출력, 오류 변환 |
 | test_search.py | 7 | 검색 정제 예제, URL 보존, 검색 인자, 빈 결과, 외부 오류 구분 |
 | test_web_research.py | 6 | 부분 실패, 출처 재사용, 기존 요청 호환, ASGI 검색→보고서 연결, 평가 예제 구조 |
+| test_scraper.py | 17 | URL·IP·리다이렉트 검증, TLS 호스트, timeout·크기·gzip·추출·공고 호환 |
+| test_source_collection.py | 7 | URL 재사용, 부분 실패, 예산, 수집→보고서 API, 기존 공고 endpoint 호환 |
 
-자동 테스트는 외부 OpenAI와 DDGS 호출을 대체합니다.
+자동 테스트는 외부 OpenAI·DDGS·페이지 HTTP 호출을 대체합니다.
 실제 API Key의 유효성, 모델 접근 권한, 추출 정확성을 확인하는 테스트는 아닙니다.
 
 ### 11.2 수동 검증
@@ -509,14 +546,16 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 - 생성된 계획의 검색 적합성은 아직 정량 평가하지 않음
 - 조사 이력과 보고서는 DB에 저장하지 않음
 - JavaScript 렌더링·로그인이 필요한 채용사이트 수집 제한
-- URL 수집 시 페이지 전체 텍스트의 앞 20,000자만 사용
+- HTML 구조에 따라 본문 일부만 추출되거나 공통 영역이 섞일 수 있음
+- 본문 수집은 고유 URL 10개와 크기·시간 예산 안에서만 수행
 - URL 중복 제거는 주제별로 수행하며 의미가 비슷한 내용의 중복은 판정하지 않음
 - 관련성 필터·출처 신뢰도 분류 미구현
 - Report는 검색 snippet 목록을 정리하는 수준
 - 주장별 출처 연결과 상충 정보 분석 미구현
 - 개인 지원자 이력과 연결한 인사이트 미구현
 - 자율 재검색과 Agent Loop 미구현
-- URL 수집의 내부 주소·리다이렉트 접근 제한 미구현
+- PDF·기타 압축 형식·환경변수 HTTP 프록시 미지원
+- OS DNS 조회에 대한 강제 종료와 엄격한 전체 요청 시간 제한 미구현
 - 출력 형식이 정상이어도 LLM 추출 내용에 오류가 있을 수 있음
 
 ## 14. 향후 개선 방향

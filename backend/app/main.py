@@ -14,6 +14,7 @@ from backend.app.research import (
     analyze_job, 
     create_research_plan,
     run_web_research,
+    collect_web_sources,
     create_research_report,)
 
 from backend.app.scraper import fetch_job_posting
@@ -137,6 +138,11 @@ def search_research_plan(research_plan: ResearchPlan):
     """
 
     return run_web_research(research_plan)
+
+@app.post("/api/research/collect", response_model=WebResearch)
+def collect_research_sources(web_research: WebResearch):
+    """검색 결과의 페이지 본문을 수집하고 페이지별 상태를 반환합니다."""
+    return collect_web_sources(web_research)
 
 @app.post("/api/research/report",response_model=ResearchReport)
 def generate_research_report(web_research: WebResearch):

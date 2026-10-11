@@ -122,3 +122,16 @@ export async function fetchJobPosting(jobUrl : string) {
 
     return response.json();
 }
+
+// 기존 검색 결과를 보내고 본문·수집 상태가 추가된 결과를 받습니다.
+export async function collectWebSources(webResearch: object) {
+    const response = await fetch(`${API_BASE_URL}/api/research/collect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(webResearch),
+    });
+    if (!response.ok) {
+        throw new Error("페이지 본문 수집 요청에 실패했습니다.");
+    }
+    return response.json();
+}

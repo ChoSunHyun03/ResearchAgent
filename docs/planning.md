@@ -550,3 +550,66 @@ React: 웹 리서치 시작
 ### 다음 단계
 
 STEP 5에서 검색 결과 페이지 본문 수집을 구현합니다. 이번 STEP에는 포함하지 않습니다.
+
+---
+## STEP 5 — 검색된 페이지 본문 수집
+
+### 목표와 설계 이유
+
+검색 snippet보다 풍부한 근거를 다음 보고서 단계에 제공하기 위한 본문 수집입니다.
+검색과 별도 실행해 기존 검색 응답 속도와 snippet 보고서 흐름을 유지합니다.
+검색 성공과 페이지 접근 성공은 독립적으로 기록합니다.
+
+### 코드와 데이터 흐름
+
+```text
+WebResearch (검색 결과와 주제별 검색 상태)
+→ App.handleCollectSources(): loading, 이전 보고서 초기화
+→ api.collectWebSources(): 기존 WebResearch를 JSON으로 전송
+→ POST /api/research/collect
+→ main.collect_research_sources(): Pydantic 검증된 객체 전달
+→ research.collect_web_sources(): 입력을 복사하고 URL별로 순차 수집
+   ├─ 같은 URL: 이번 요청의 캐시 결과 재사용
+   ├─ 개수·시간 예산 도달: page.status=skipped
+   └─ scraper.fetch_page()
+       → validate_target(): HTTP(S)·포트·공개 DNS 주소 검증
+       → 검증 IP에 직접 연결, HTTPS 원래 호스트 인증서·SNI 유지
+       → 리다이렉트마다 재검증
+       → 크기 제한 내 HTML/gzip 읽기
+       → extract_html(): article → main → body 우선, 불필요 태그 제거
+       → PageContent 또는 PageFetchError
+→ SearchResult.page에 본문·시각·최종 URL·수집 상태 추가
+→ WebResearch JSON 응답
+→ App.setWebResearch(): 본문 펼치기 또는 실패·생략 메시지
+→ 기존 /api/research/report: snippet 보고서 유지
+```
+
+### 유지하는 동작과 제한
+
+- 기존 검색 결과와 `page` 없는 요청 지원, 수집하지 않아도 보고서 생성 가능
+- 본문을 그대로 보고서 요약으로 사용하지 않음; 근거 기반 LLM 요약은 STEP 7
+- 같은 URL은 요청 내에서 한 번 시도, 실패 결과도 요청 내 재사용; 영구 저장·캐시 없음
+- 고유 URL 최대 10개, 페이지당 8초 예산, 전체 45초 진행 예산
+- 연결·읽기 timeout 각각 최대 2초; OS DNS 조회는 강제 취소하지 않으므로 엄격한 종료 시간 보장은 아님
+- 전송 및 gzip 해제 각각 1,000,000바이트 제한, 본문 최대 12,000자, 잘림 표시
+- 공개 IP만 연결하고 자동 리다이렉트·자동 재시도·환경변수 프록시는 사용하지 않음
+- 기본 검색 경로 정제와 별도로 실제 연결 주소를 검증하며 인증서 검증을 유지
+- 기존 공고 URL 수집도 공통 수집기를 사용: `job_text` 문자열·20,000자 제한·실패 HTTP 400 유지
+- 본문 추출은 HTML 구조에 따른 휴리스틱이며 로그인·JS 렌더링·PDF·기타 압축 형식 미지원
+- 인터넷 전체의 수집 성공률이나 본문 정확성을 보장하지 않음
+
+### 검증 — 2026-10-12
+
+- 백엔드 테스트: 기존 40개 + 신규 24개, 총 64개 통과
+- 프론트엔드 TypeScript·Vite build·lint 통과
+- pip check: 의존성 충돌 없음; 이미 설치된 urllib3 2.8.0을 직접 의존성으로 명세
+- 고정 HTML로 본문·제목 추출, 불필요 태그 제거, 본문 잘림 확인
+- 내부·메타데이터 IP 및 공개/비공개 혼합 DNS 차단, 검증 IP 고정과 TLS 호스트 확인
+- 리다이렉트 내부 주소 차단·횟수 제한, HTTP·timeout·크기·지원 형식·gzip 오류 검증
+- 실제 HTTPS: https://www.python.org/about/ 본문 2,405자, 제목·UTC 수집 시각, 잘림 없음 확인
+- 실제 페이지가 gzip을 반환해 제한된 gzip 해제 기능 추가 후 성공 확인
+- 실제 OpenAI 호출 및 화면 클릭 검증은 이번 작업에서 미실행
+
+### 다음 단계
+
+STEP 6은 출처 유형과 관련성 분류입니다. 이번 작업에는 포함하지 않습니다.

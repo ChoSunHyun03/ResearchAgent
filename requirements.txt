@@ -11,3 +11,6 @@ beautifulsoup4==4.15.0
 # OpenAI 호출과 루트 .env 로딩
 openai==3.22.1
 python-dotenv==1.2.3
+
+# 공개 IP 검증 후 연결하는 페이지 수집기
+urllib3==2.8.0

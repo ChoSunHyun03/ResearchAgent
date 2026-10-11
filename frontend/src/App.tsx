@@ -5,6 +5,7 @@ import {useState} from "react";
 import {analyzeJob, 
         createResearchPlan, 
         runWebResearch,
+        collectWebSources,
         createResearchReport,
         fetchJobPosting } from "./api";
 
@@ -29,10 +30,22 @@ interface ResearchPlan {
   queries: ResearchQuery[];
 }
 
+interface PageContent {
+  status: "success" | "error" | "skipped";
+  final_url: string;
+  title: string;
+  text: string;
+  truncated: boolean;
+  fetched_at: string | null;
+  error_kind: string | null;
+  error_message: string | null;
+}
+
 interface SearchResult{
   title: string;
   url: string;
   snippet: string;
+  page?: PageContent | null;
 }
 
 interface ResearchResult{
@@ -177,6 +190,21 @@ function App() {
     } catch{
       setError("웹 검색 중 오류가 발생했습니다. 일부 검색어에서 결과가 없을 수 있습니다.");
     }finally{
+      setLoading(false);
+    }
+  };
+
+  const handleCollectSources = async () => {
+    if (!webResearch) return;
+    try {
+      setLoading(true);
+      setError("");
+      setResearchReport(null);
+      const collected = await collectWebSources(webResearch);
+      setWebResearch(collected);
+    } catch {
+      setError("페이지 본문 수집 요청에 실패했습니다. 기존 검색 결과로 보고서를 만들 수 있습니다.");
+    } finally {
       setLoading(false);
     }
   };
@@ -375,6 +403,17 @@ function App() {
 
                       <h4>{result.title}</h4>
                       <p>{result.snippet}</p>
+                      {result.page?.status === "success" && (
+                        <details>
+                          <summary>수집한 본문 보기{result.page.truncated ? " (길이 제한 적용)" : ""}</summary>
+                          <p>수집 시각: {result.page.fetched_at}</p>
+                          <p>최종 주소: {result.page.final_url}</p>
+                          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{result.page.text}</pre>
+                        </details>
+                      )}
+                      {result.page && result.page.status !== "success" && (
+                        <p>본문 수집 {result.page.status === "skipped" ? "생략" : "실패"}: {result.page.error_message} 검색 요약은 유지됩니다.</p>
+                      )}
 
                       <a
                         href={result.url}
@@ -391,6 +430,13 @@ function App() {
                 )}
               </div>
             ))}
+            <p>본문 수집은 선택 사항입니다. 현재 보고서는 검색 요약을 사용합니다.</p>
+            <button
+              onClick={handleCollectSources}
+              disabled={loading || !webResearch.research_results.some((item) => item.results.length > 0)}
+            >
+              페이지 본문 수집
+            </button>
             <button
               onClick={handleCreateResearchReport}
               disabled={loading}

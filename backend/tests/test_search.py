@@ -13,7 +13,7 @@ class SearchTests(unittest.TestCase):
         cases = json.loads((Path(__file__).parent / "fixtures/search_cases.json").read_text())
         for case in cases:
             with self.subTest(case=case["id"]):
-                actual = [item.model_dump() for item in clean_search_results(case["raw"])]
+                actual = [item.model_dump(exclude_none=True) for item in clean_search_results(case["raw"])]
                 self.assertEqual(actual, case["expected"])
 
     def test_url_identity_and_invalid_urls(self):

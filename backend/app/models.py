@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, HttpUrl
@@ -39,11 +40,23 @@ class ResearchPlan (BaseModel) :
     # 여러 개의 ResearchQuery를 저장
     queries : list[ResearchQuery]
 
+# 검색 상태와 별도로 페이지별 본문 수집 상태를 보관합니다.
+class PageContent(BaseModel):
+    status: Literal["success", "error", "skipped"]
+    final_url: str = ""
+    title: str = ""
+    text: str = ""
+    truncated: bool = False
+    fetched_at: datetime | None = None
+    error_kind: Literal["unsafe_url", "network", "timeout", "redirect", "http", "unsupported", "too_large", "empty_content", "budget"] | None = None
+    error_message: str | None = None
+
 # 하나의 웹 검색 결과
 class SearchResult(BaseModel) :
     title : str
     url : str
     snippet : str
+    page: PageContent | None = None
 
 # 기존 필드를 유지하면서 검색 상태를 추가합니다.
 SearchStatus = Literal["success", "no_results", "error"]

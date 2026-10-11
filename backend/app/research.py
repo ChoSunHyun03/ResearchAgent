@@ -1,7 +1,9 @@
 import json
+import time
 from pathlib import Path
 
 from backend.app.models import (
+    PageContent,
     JobAnalysis, 
     ResearchPlan, 
     ResearchQuery,
@@ -11,7 +13,8 @@ from backend.app.models import (
     ReportSection,
     ReportSource,)
 
-from backend.app.search import SearchError, search_web
+from backend.app.search import SearchError, normalize_url, search_web
+from backend.app.scraper import PAGE_SECONDS, PageFetchError, fetch_page
 
 from backend.app.config import load_settings
 
@@ -206,6 +209,31 @@ def run_web_research(research_plan: ResearchPlan) -> WebResearch:
         position=research_plan.position,
         research_results=research_results,
     )
+
+def collect_web_sources(web_research: WebResearch) -> WebResearch:
+    """요청 안에서 URL별로 한 번 수집하고 기존 검색 결과에 본문을 붙입니다."""
+    collected = web_research.model_copy(deep=True)
+    cache: dict[str, PageContent] = {}
+    deadline = time.monotonic() + 45
+    for research_result in collected.research_results:
+        for result in research_result.results:
+            key = normalize_url(result.url) or result.url
+            if key in cache:
+                result.page = cache[key].model_copy(deep=True)
+                continue
+            remaining = deadline - time.monotonic()
+            if len(cache) >= 10 or remaining <= 0:
+                result.page = PageContent(status="skipped", error_kind="budget",
+                    error_message="이번 요청의 수집 개수 또는 시간 제한에 도달했습니다.")
+                continue
+            try:
+                page = fetch_page(key, seconds=min(PAGE_SECONDS, remaining))
+            except PageFetchError as error:
+                page = PageContent(status="error", error_kind=error.kind, error_message=str(error))
+            cache[key] = page
+            result.page = page.model_copy(deep=True)
+    return collected
+
 
 def create_research_report(web_research: WebResearch) -> ResearchReport:
     """

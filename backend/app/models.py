@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, HttpUrl
 
 # 사용자가 입력한 채용 공공
@@ -43,12 +45,19 @@ class SearchResult(BaseModel) :
     url : str
     snippet : str
 
+# 기존 필드를 유지하면서 검색 상태를 추가합니다.
+SearchStatus = Literal["success", "no_results", "error"]
+SearchErrorKind = Literal["timeout", "rate_limit", "upstream", "invalid_response", "invalid_query"]
+
 # 하나의 Research Query에 대한 검색 결과
 class ResearchResult(BaseModel) :
     topic : str
     query : str
     reason : str
     results : list[SearchResult]
+    status: SearchStatus = "success"
+    error_kind: SearchErrorKind | None = None
+    error_message: str | None = None
 
 # 전체 웹 리서치 결과
 class WebResearch(BaseModel) :
@@ -67,6 +76,10 @@ class ReportSection(BaseModel) :
     query : str
     summary : list[str]
     sources : list[ReportSource]
+    # 보고서에서도 실패한 검색을 단순한 정보 부족으로 숨기지 않습니다.
+    status: SearchStatus = "success"
+    error_kind: SearchErrorKind | None = None
+    error_message: str | None = None
 
 # 최종 Research Report
 class ResearchReport(BaseModel) : 

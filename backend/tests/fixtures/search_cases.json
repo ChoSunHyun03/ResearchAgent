@@ -1,0 +1,124 @@
+[
+  {
+    "id": "tracking_duplicates",
+    "raw": [
+      {
+        "title": "  테스트회사\n 사업 ",
+        "href": "https://EXAMPLE.com:443/business?utm_source=test&id=7#intro",
+        "body": ""
+      },
+      {
+        "title": "중복 제목",
+        "href": "https://example.com/business?id=7&fbclid=click",
+        "body": " 사업\n 설명 "
+      },
+      {
+        "title": "별도 페이지",
+        "href": "https://example.com/business?id=8",
+        "body": "다른 내용"
+      }
+    ],
+    "expected": [
+      {
+        "title": "테스트회사 사업",
+        "url": "https://example.com/business?id=7",
+        "snippet": "사업 설명"
+      },
+      {
+        "title": "별도 페이지",
+        "url": "https://example.com/business?id=8",
+        "snippet": "다른 내용"
+      }
+    ]
+  },
+  {
+    "id": "invalid_and_blank_items",
+    "raw": [
+      null,
+      {
+        "title": "잘못된 링크",
+        "href": "javascript:alert(1)",
+        "body": "텍스트"
+      },
+      {
+        "title": "",
+        "href": "https://example.com/empty",
+        "body": " "
+      },
+      {
+        "title": 12,
+        "href": "https://example.com/snippet",
+        "body": "본문 설명"
+      },
+      {
+        "title": "제목만 있음",
+        "href": "https://example.com/title",
+        "body": null
+      }
+    ],
+    "expected": [
+      {
+        "title": "",
+        "url": "https://example.com/snippet",
+        "snippet": "본문 설명"
+      },
+      {
+        "title": "제목만 있음",
+        "url": "https://example.com/title",
+        "snippet": ""
+      }
+    ]
+  },
+  {
+    "id": "rank_and_limit",
+    "raw": [
+      {
+        "title": "결과 0",
+        "href": "https://example.com/0",
+        "body": "내용 0"
+      },
+      {
+        "title": "결과 1",
+        "href": "https://example.com/1",
+        "body": "내용 1"
+      },
+      {
+        "title": "결과 2",
+        "href": "https://example.com/2",
+        "body": "내용 2"
+      },
+      {
+        "title": "결과 3",
+        "href": "https://example.com/3",
+        "body": "내용 3"
+      },
+      {
+        "title": "결과 4",
+        "href": "https://example.com/4",
+        "body": "내용 4"
+      }
+    ],
+    "expected": [
+      {
+        "title": "결과 0",
+        "url": "https://example.com/0",
+        "snippet": "내용 0"
+      },
+      {
+        "title": "결과 1",
+        "url": "https://example.com/1",
+        "snippet": "내용 1"
+      },
+      {
+        "title": "결과 2",
+        "url": "https://example.com/2",
+        "snippet": "내용 2"
+      }
+    ]
+  },
+  {
+    "id": "empty_search",
+    "raw": [],
+    "expected": []
+  }
+]

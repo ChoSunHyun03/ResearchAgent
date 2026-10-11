@@ -38,11 +38,12 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 - STEP 1: OpenAI 환경설정과 클라이언트 생성 기반
 - STEP 2: 실제 채용공고의 구조화 분석
 - STEP 3: 설정으로 선택하는 LLM Research Planner
+- STEP 4: 검색 결과 정제·주제별 상태 구분·평가용 예제 준비
 
 ### 아직 구현하지 않은 기능
 
 - 조사 이력과 결과의 데이터베이스 저장
-- 검색 결과 중복 제거와 출처 분류
+- 출처 유형과 관련성 분류
 - 여러 출처를 종합한 LLM Report
 - 지원 준비 인사이트 생성
 - 정보 충분 여부 평가와 추가 검색
@@ -165,16 +166,31 @@ LLM 오류 발생 시 규칙 기반으로 자동 전환하지 않고 오류를 �
 
 ### 5.4 Web Research
 
-DDGS로 검색어별 최대 세 개의 결과를 수집합니다.
+DDGS로 검색어별 최대 여섯 개의 후보를 요청하고, 정제 후 최대 세 개를 반환합니다.
 
-검색 결과는 다음 필드로 구성됩니다.
+- 제목과 snippet의 공백 정리
+- HTTP(S) URL 검증, 일반 추적 파라미터와 fragment 제거
+- 같은 주제 안에서 같은 URL의 중복 제거, 먼저 나온 순위 유지
+- 의미 있는 URL 파라미터·인코딩·경로 보존
+- URL이 없거나 제목과 snippet이 모두 비어 있는 항목 제외
+- 다른 주제에서 사용되는 동일 출처는 각 주제에 유지
 
-- title
-- url
-- snippet
+각 검색 주제에는 기존 `results`와 함께 다음 상태를 반환합니다.
 
-검색어는 순차적으로 실행합니다.
-DDGS 예외는 빈 결과로 처리하여 후속 흐름을 유지합니다.
+| status | 의미 |
+|---|---|
+| success | 표시할 수 있는 정제 결과가 있음 |
+| no_results | 검색 호출은 완료되었으나 정제 후 결과가 없음 |
+| error | 검색 호출 실패 또는 잘못된 검색어·응답 |
+
+오류에는 `error_kind`와 안전한 `error_message`가 포함됩니다.
+시간 초과·요청 제한·검색 서비스 오류·잘못된 응답·잘못된 검색어를 구분합니다.
+한 주제가 실패해도 다른 주제의 검색과 보고서 생성은 계속합니다.
+부분 실패를 포함한 정상 요청은 HTTP 200이고, 상태는 주제별로 확인합니다.
+DDGS가 예외를 반환한 경우 실제로 정보가 없는지 단정하지 않고 오류로 표시합니다.
+
+검색 결과 정제는 관련성 판정이나 출처 사실 검증이 아닙니다.
+외부 검색 결과에 대한 본문 수집과 출처 분석은 다음 STEP에서 진행합니다.
 
 ### 5.5 Research Report
 
@@ -185,7 +201,8 @@ DDGS 예외는 빈 결과로 처리하여 후속 흐름을 유지합니다.
 - 검색 snippet 목록
 - 출처 제목과 URL
 
-현재는 snippet을 정리하는 방식입니다.
+현재는 snippet을 정리하는 방식입니다. 검색 상태와 오류도 보고서에 전달하여
+검색 실패를 단순한 정보 부족과 구분합니다.
 여러 출처의 사실을 종합하거나 지원 준비 인사이트를 생성하는 LLM 요약은 아직 없습니다.
 
 ## 6. Tech Stack
@@ -225,7 +242,11 @@ ResearchAgent/
 │   └── tests/
 │       ├── test_config.py
 │       ├── test_job_analysis.py
-│       └── test_research_plan.py
+│       ├── test_research_plan.py
+│       ├── test_search.py
+│       ├── test_web_research.py
+│       └── fixtures/
+│           └── search_cases.json
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx
@@ -239,6 +260,9 @@ ResearchAgent/
 │   └── vite.config.ts
 ├── docs/
 │   └── planning.md
+├── evaluation/
+│   ├── README.md
+│   └── job_analysis_cases.json
 ├── mock_data/                 # 로컬 개발용, Git 제외
 │   └── interx.json
 ├── mock_data.example.json
@@ -431,15 +455,17 @@ source .venv/bin/activate
 python -m unittest discover -s backend/tests -p "test_*.py" -v
 ```
 
-현재 자동 테스트는 총 27개입니다.
+현재 자동 테스트는 총 40개입니다.
 
 | 파일 | 개수 | 주요 검증 |
 |---|---:|---|
 | test_config.py | 8 | 환경 로딩, 기본값, 우선순위, 설정 검증, 클라이언트 생성 |
 | test_job_analysis.py | 10 | 입력 검증, 분석 분기, 출력 형식, 거절·미완성 응답, API 오류 변환 |
 | test_research_plan.py | 9 | 계획 생성 분기, 원본 정보 유지, 개수·공백·중복 검증, 구조화 출력, 오류 변환 |
+| test_search.py | 7 | 검색 정제 예제, URL 보존, 검색 인자, 빈 결과, 외부 오류 구분 |
+| test_web_research.py | 6 | 부분 실패, 출처 재사용, 기존 요청 호환, ASGI 검색→보고서 연결, 평가 예제 구조 |
 
-자동 테스트는 외부 OpenAI 호출을 대체합니다.
+자동 테스트는 외부 OpenAI와 DDGS 호출을 대체합니다.
 실제 API Key의 유효성, 모델 접근 권한, 추출 정확성을 확인하는 테스트는 아닙니다.
 
 ### 11.2 수동 검증
@@ -459,6 +485,8 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 평가 데이터셋을 활용한 정확도·응답시간·비용의 정량 평가는 아직 수행하지 않았습니다.
 
 세부 검증 결과는 `docs/planning.md`에 기록합니다.
+가상 공고 네 개의 기대 분석과 계획 검토 기준은 `evaluation/`에 있습니다.
+정제 예제 네 개는 자동 테스트에 사용하며, 모델 품질의 정량 평가 실행기는 아직 없습니다.
 
 ## 12. 분석 API 오류 처리
 
@@ -482,8 +510,8 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 - 조사 이력과 보고서는 DB에 저장하지 않음
 - JavaScript 렌더링·로그인이 필요한 채용사이트 수집 제한
 - URL 수집 시 페이지 전체 텍스트의 앞 20,000자만 사용
-- 검색 결과 중복 제거·관련성 필터·출처 신뢰도 분류 미구현
-- DDGS 실패와 검색 결과 없음을 동일한 빈 결과로 처리
+- URL 중복 제거는 주제별로 수행하며 의미가 비슷한 내용의 중복은 판정하지 않음
+- 관련성 필터·출처 신뢰도 분류 미구현
 - Report는 검색 snippet 목록을 정리하는 수준
 - 주장별 출처 연결과 상충 정보 분석 미구현
 - 개인 지원자 이력과 연결한 인사이트 미구현

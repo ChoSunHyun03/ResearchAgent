@@ -40,6 +40,9 @@ interface ResearchResult{
   query: string;
   reason: string;
   results: SearchResult[];
+  status?: "success" | "no_results" | "error";
+  error_kind?: string | null;
+  error_message?: string | null;
 }
 
 interface WebResearch{
@@ -58,6 +61,9 @@ interface ReportSection{
   query : string;
   summary : string[];
   sources : ReportSource[];
+  status?: "success" | "no_results" | "error";
+  error_kind?: string | null;
+  error_message?: string | null;
 }
 
 interface ResearchReport{
@@ -162,6 +168,7 @@ function App() {
     try{
       setLoading(true);
       setError("");
+      setWebResearch(null);
       setResearchReport(null);
 
       const data = await runWebResearch(researchPlan);
@@ -359,6 +366,9 @@ function App() {
                   <strong>검색어:</strong> {research.query}
                 </p>
                 
+                {research.status === "error" && (
+                  <p role="alert">{research.error_message || "검색에 실패했습니다. 다시 시도해주세요."}</p>
+                )}
                 {research.results.length > 0 ? (
                   research.results.map((result, resultIndex) => (
                     <div key={resultIndex}>
@@ -375,10 +385,9 @@ function App() {
                       </a>
                     </div>
                     ))) : (
-                    <p>
-                      해당 검색어에서는 검색 결과를 
-                      찾지 못했습니다.
-                    </p>
+                    research.status !== "error" && (
+                      <p>검색은 완료되었지만 표시할 수 있는 결과가 없습니다.</p>
+                    )
                 )}
               </div>
             ))}
@@ -398,7 +407,7 @@ function App() {
 
             <p>
               <strong>기업:</strong> {" "}
-              {researchReport.position}
+              {researchReport.company}
             </p>
 
             {/* Topic별 Report Section 출력 */}
@@ -416,6 +425,9 @@ function App() {
 
                 <h4>핵심 내용</h4>
 
+                {section.status === "error" && (
+                  <p role="alert">{section.error_message || "이 주제의 검색에 실패했습니다."}</p>
+                )}
                 {section.summary.length > 0 ? (
                   <ul>
                     {section.summary.map((summary, summaryIndex) => (
@@ -425,7 +437,7 @@ function App() {
                     ))}
                   </ul>
                 ) : (
-                  <p>정리할 수 있는 검색 결과가 없습니다.</p>
+                  section.status !== "error" && <p>정리할 수 있는 검색 결과가 없습니다.</p>
                 )}
                 <h4>출처</h4>
                 

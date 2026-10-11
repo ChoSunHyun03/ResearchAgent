@@ -1,0 +1,103 @@
+[
+  {
+    "id": "ai_engineer",
+    "job_text": "가상알파 AI Engineer 채용. 주요 업무: 모델 API 개발, 모델 배포 운영. 필수조건: Python, PyTorch 경험. 우대조건: Docker, Kubernetes 경험.",
+    "expected": {
+      "company": "가상알파",
+      "position": "AI Engineer",
+      "responsibilities": [
+        "모델 API 개발",
+        "모델 배포 운영"
+      ],
+      "requirements": [
+        "Python",
+        "PyTorch 경험"
+      ],
+      "preferred": [
+        "Docker",
+        "Kubernetes 경험"
+      ],
+      "keywords": [
+        "Python",
+        "PyTorch",
+        "Docker",
+        "Kubernetes"
+      ]
+    },
+    "planner_focus": [
+      "모델 배포",
+      "모델 API",
+      "운영"
+    ]
+  },
+  {
+    "id": "ax_pm",
+    "job_text": "가상알파 AX PM 채용. 주요 업무: 생성형 AI 도입 기획, 업무 프로세스 분석. 필수조건: 프로젝트 관리 경험, 이해관계자 협업 경험.",
+    "expected": {
+      "company": "가상알파",
+      "position": "AX PM",
+      "responsibilities": [
+        "생성형 AI 도입 기획",
+        "업무 프로세스 분석"
+      ],
+      "requirements": [
+        "프로젝트 관리 경험",
+        "이해관계자 협업 경험"
+      ],
+      "preferred": [],
+      "keywords": [
+        "AX",
+        "생성형 AI",
+        "프로젝트 관리"
+      ]
+    },
+    "planner_focus": [
+      "생성형 AI 도입",
+      "업무 프로세스",
+      "프로젝트 관리"
+    ]
+  },
+  {
+    "id": "missing_requirements",
+    "job_text": "가상베타 Backend Engineer 채용. 주요 업무: 서비스 API 개발. 우대조건: Docker 경험.",
+    "expected": {
+      "company": "가상베타",
+      "position": "Backend Engineer",
+      "responsibilities": [
+        "서비스 API 개발"
+      ],
+      "requirements": [],
+      "preferred": [
+        "Docker 경험"
+      ],
+      "keywords": [
+        "Backend Engineer",
+        "API",
+        "Docker"
+      ]
+    },
+    "planner_focus": [
+      "서비스 API"
+    ]
+  },
+  {
+    "id": "missing_identity",
+    "job_text": "주요 업무: 데이터 분석. 필수조건: SQL 경험.",
+    "expected": {
+      "company": "",
+      "position": "",
+      "responsibilities": [
+        "데이터 분석"
+      ],
+      "requirements": [
+        "SQL 경험"
+      ],
+      "preferred": [],
+      "keywords": [
+        "데이터 분석",
+        "SQL"
+      ]
+    },
+    "planner_focus": []
+  }
+]

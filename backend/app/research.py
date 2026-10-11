@@ -11,7 +11,7 @@ from backend.app.models import (
     ReportSection,
     ReportSource,)
 
-from backend.app.search import search_web
+from backend.app.search import SearchError, search_web
 
 from backend.app.config import load_settings
 
@@ -170,10 +170,24 @@ def run_web_research(research_plan: ResearchPlan) -> WebResearch:
     research_results = []
 
     for research_query in research_plan.queries:
-        results = search_web(
-            research_query.query,
-            max_results = 3,
-        )
+        # 실패는 해당 주제에 기록하고 다음 주제의 검색을 계속합니다.
+        status = "success"
+        error_kind = None
+        error_message = None
+        try:
+            results = search_web(research_query.query, max_results=3)
+            if not results:
+                status = "no_results"
+        except SearchError as error:
+            results = []
+            status = "error"
+            error_kind = error.kind
+            error_message = str(error)
+        except ValueError:
+            results = []
+            status = "error"
+            error_kind = "invalid_query"
+            error_message = "검색어와 검색 결과 개수를 확인해주세요."
 
         research_results.append(
             ResearchResult(
@@ -181,6 +195,9 @@ def run_web_research(research_plan: ResearchPlan) -> WebResearch:
                 query=research_query.query,
                 reason=research_query.reason,
                 results=results,
+                status=status,
+                error_kind=error_kind,
+                error_message=error_message,
             )
         )
 
@@ -226,6 +243,9 @@ def create_research_report(web_research: WebResearch) -> ResearchReport:
             query = research_result.query,
             summary = summary,
             sources = sources,
+            status=research_result.status,
+            error_kind=research_result.error_kind,
+            error_message=research_result.error_message,
         )
 
         # 전체 Report Section 목록에 추가

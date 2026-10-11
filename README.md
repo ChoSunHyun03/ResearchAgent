@@ -4,8 +4,8 @@
 관련 정보를 웹에서 검색해 출처를 포함한 Research Report를 제공하는 학습용 프로젝트입니다.
 
 React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
-현재 채용공고 분석에는 OpenAI Structured Outputs를 사용하고,
-리서치 계획과 보고서는 기존 규칙 기반 방식을 유지합니다.
+채용공고 분석과 리서치 계획에는 OpenAI Structured Outputs를 사용할 수 있습니다.
+개발용 mock 분석과 규칙 기반 계획을 유지하며, 보고서는 아직 snippet 기반입니다.
 
 ## 1. 프로젝트 목적
 
@@ -29,7 +29,7 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 | 채용공고 입력 | URL 입력 또는 직접 텍스트 입력 |
 | URL 텍스트 추출 | requests + BeautifulSoup |
 | Job Analysis | OpenAI Structured Outputs 또는 개발용 mock |
-| Research Plan | 규칙 기반 검색어 생성 |
+| Research Plan | OpenAI Structured Outputs 또는 규칙 기반 검색어 생성 |
 | Web Research | DDGS 웹 검색 |
 | Research Report | 검색 snippet과 출처를 주제별로 정리 |
 
@@ -37,10 +37,11 @@ React 프론트엔드와 FastAPI 백엔드로 구성되어 있습니다.
 
 - STEP 1: OpenAI 환경설정과 클라이언트 생성 기반
 - STEP 2: 실제 채용공고의 구조화 분석
+- STEP 3: 설정으로 선택하는 LLM Research Planner
 
 ### 아직 구현하지 않은 기능
 
-- LLM 기반 Research Planning
+- 조사 이력과 결과의 데이터베이스 저장
 - 검색 결과 중복 제거와 출처 분류
 - 여러 출처를 종합한 LLM Report
 - 지원 준비 인사이트 생성
@@ -93,6 +94,7 @@ FastAPI — main.py
 리서치 처리 — research.py
         ├─ 환경설정 — config.py
         ├─ 채용공고 분석 — llm/openai_provider.py
+        ├─ 조사 계획 생성 — llm/research_planner.py
         ├─ 웹 검색 — search.py
         └─ URL 텍스트 추출 — scraper.py
 
@@ -158,8 +160,8 @@ USE_LLM_PLANNER=false에서는 기존 규칙 기반 계획을 사용합니다.
 계획은 조사 질문이며, 회사에 대한 확인된 사실이 아닙니다.
 검색과 Report 생성은 기존 방식을 유지합니다.
 
-각 항목에는 `topic`, `query`, `reason`이 포함됩니다.
-현재는 고정 주제와 템플릿을 사용하는 규칙 기반 방식입니다.
+회사명 또는 직무명이 비어 있으면 계획 생성을 거부합니다.
+LLM 오류 발생 시 규칙 기반으로 자동 전환하지 않고 오류를 반환합니다.
 
 ### 5.4 Web Research
 
@@ -218,10 +220,12 @@ ResearchAgent/
 │   │   ├── prompts.py
 │   │   └── llm/
 │   │       ├── __init__.py
-│   │       └── openai_provider.py
+│   │       ├── openai_provider.py
+│   │       └── research_planner.py
 │   └── tests/
 │       ├── test_config.py
-│       └── test_job_analysis.py
+│       ├── test_job_analysis.py
+│       └── test_research_plan.py
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx
@@ -254,7 +258,8 @@ ResearchAgent/
 | config.py | 루트 .env 로딩과 설정 검증 |
 | research.py | 분석 분기와 리서치 처리 |
 | openai_provider.py | SDK 클라이언트 생성과 구조화 분석 |
-| prompts.py | 분석 프롬프트 |
+| research_planner.py | LLM 조사 계획 생성과 결과 검증 |
+| prompts.py | 분석·계획 생성 프롬프트 |
 | search.py | DDGS 검색 |
 | scraper.py | URL에서 텍스트 추출 |
 | App.tsx | 입력·결과 화면과 단계별 실행 |
@@ -298,6 +303,7 @@ OpenAI 모드 설정 예시:
 
 ```dotenv
 USE_MOCK=false
+USE_LLM_PLANNER=true
 LLM_PROVIDER=openai
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4.1-mini
@@ -309,7 +315,8 @@ OPENAI_MODEL=gpt-4.1-mini
 - `.env`와 `.env.*`는 Git에서 제외
 - 값이 없는 `.env.example`은 Git에 포함
 - 기존 시스템 환경변수가 `.env`보다 우선
-- Key가 없는 상태에서도 mock 모드는 사용 가능
+- Key 없이 전체 개발 흐름을 사용하려면 `USE_MOCK=true`, `USE_LLM_PLANNER=false` 설정
+- `USE_MOCK`는 공고 분석만 제어하며, LLM 계획은 `USE_LLM_PLANNER`로 별도 선택
 - 실제 OpenAI 호출에는 API 사용 비용 발생
 
 `.env`를 변경한 뒤에는 서버를 완전히 종료하고 다시 실행합니다.
@@ -320,6 +327,7 @@ OPENAI_MODEL=gpt-4.1-mini
 
 ```dotenv
 USE_MOCK=true
+USE_LLM_PLANNER=false
 LLM_PROVIDER=openai
 OPENAI_API_KEY=
 OPENAI_MODEL=
@@ -423,12 +431,13 @@ source .venv/bin/activate
 python -m unittest discover -s backend/tests -p "test_*.py" -v
 ```
 
-현재 자동 테스트는 총 18개입니다.
+현재 자동 테스트는 총 27개입니다.
 
 | 파일 | 개수 | 주요 검증 |
 |---|---:|---|
 | test_config.py | 8 | 환경 로딩, 기본값, 우선순위, 설정 검증, 클라이언트 생성 |
 | test_job_analysis.py | 10 | 입력 검증, 분석 분기, 출력 형식, 거절·미완성 응답, API 오류 변환 |
+| test_research_plan.py | 9 | 계획 생성 분기, 원본 정보 유지, 개수·공백·중복 검증, 구조화 출력, 오류 변환 |
 
 자동 테스트는 외부 OpenAI 호출을 대체합니다.
 실제 API Key의 유효성, 모델 접근 권한, 추출 정확성을 확인하는 테스트는 아닙니다.
@@ -469,8 +478,8 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 
 ## 13. 현재 한계
 
-- Research Plan은 고정된 다섯 주제의 규칙 기반 방식
-- 업무·필수조건·우대조건을 활용한 동적 계획 미구현
+- 생성된 계획의 검색 적합성은 아직 정량 평가하지 않음
+- 조사 이력과 보고서는 DB에 저장하지 않음
 - JavaScript 렌더링·로그인이 필요한 채용사이트 수집 제한
 - URL 수집 시 페이지 전체 텍스트의 앞 20,000자만 사용
 - 검색 결과 중복 제거·관련성 필터·출처 신뢰도 분류 미구현
@@ -486,16 +495,30 @@ python -m unittest discover -s backend/tests -p "test_*.py" -v
 
 각 단계는 기존 기능을 유지하면서 구현하고 검증합니다.
 
-1. LLM 기반 Research Planner
-2. Python 기반 검색 결과 정제
-3. 출처 유형과 신뢰도 분류
-4. 출처를 추적할 수 있는 LLM Report
-5. 직무 기반 지원 준비 인사이트
-6. 정보 충분 여부 평가와 제한된 추가 검색
-7. LangGraph 기반 조건 분기와 반복 제어
-8. 검색·페이지 수집 기능의 MCP Tool 분리
-9. 평가 데이터셋 구축과 Ollama 비교
-10. 필요성이 확인된 경우 LoRA·GPU·vLLM 실험
+| STEP | 작업 |
+|---|---|
+| 1 | OpenAI 환경 구성 |
+| 2 | OpenAI Job Analysis |
+| 3 | LLM Research Planner |
+| 4 | 검색 결과 정제와 평가용 예제 준비 |
+| 5 | 검색된 페이지 본문 수집 |
+| 6 | 출처 유형과 관련성 분류 |
+| 7 | 출처 기반 LLM Research Report |
+| 8 | SQLite로 조사 이력·결과 저장 및 조회 |
+| 9 | 직무 기반 지원 준비 인사이트 |
+| 10 | 정보 충분 여부 평가와 제한된 추가 검색 |
+| 11 | LangGraph 기반 상태·분기·반복 관리 |
+| 12 | 기존 리서치 기능을 제공하는 MCP 서버 |
+| 13 | 모델 Provider 정리와 Ollama 연결 |
+| 14 | 모델 품질·속도·비용 평가 |
+| 15 (선택) | GPU 추론 서빙 실험 |
+| 16 (선택) | LoRA 파인튜닝 실험 |
+| 17 (선택) | 학습 모델 서빙과 최종 문서 정리 |
+
+STEP 8에서는 실행 ID·상태·시각·실패 원인, 분석·계획·검색 출처·보고서를 저장하고
+이력 목록과 상세 조회 API 및 화면을 추가합니다. 로그인과 Vector DB는 포함하지 않습니다.
+평가용 예제는 STEP 4부터 준비하고, STEP 14에서 모델 간 비교를 수행합니다.
+선택 단계는 장비·예산과 평가 결과를 확인한 후 진행합니다.
 
 MCP는 검색과 페이지 수집 같은 외부 자원 접근 도구를
 Agent 구현에서 분리하기 위해 검토합니다.
@@ -515,4 +538,6 @@ LoRA는 최신 회사 정보를 학습시키기보다
 - 구현 범위와 한계를 문서에 기록
 - 실제로 확인한 결과만 평가 내용으로 작성
 
-현재 STEP 1과 STEP 2 작업은 `openai-enviroment` 브랜치에서 진행합니다.
+작업은 기존 `openai-enviroment` 브랜치에서 진행합니다.
+한 번에 하나의 STEP만 구현·검증·문서화하고 GitHub에 반영합니다.
+변경 설명은 구현 이유, 코드 흐름, 검증 결과를 중심으로 제공합니다.

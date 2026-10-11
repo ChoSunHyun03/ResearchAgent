@@ -65,7 +65,8 @@ class SourceCollectionTests(unittest.TestCase):
         with patch("backend.app.main.fetch_job_posting", return_value="공고 본문"):
             status, payload = asyncio.run(post_json("/api/jobs/fetch", {"job_url": "https://example.com/job"}))
         self.assertEqual(status, 200)
-        self.assertEqual(payload, {"job_text": "공고 본문"})
+        self.assertEqual(payload["job_text"], "공고 본문")
+        self.assertTrue(payload["warnings"])
         with patch("backend.app.main.fetch_job_posting", side_effect=PageFetchError("unsafe_url", "내부 주소 차단")):
             status, payload = asyncio.run(post_json("/api/jobs/fetch", {"job_url": "http://127.0.0.1/"}))
         self.assertEqual(status, 400)

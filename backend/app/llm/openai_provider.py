@@ -1,3 +1,5 @@
+import json
+
 from openai import (
     OpenAI,
     APIError,
@@ -43,7 +45,7 @@ def create_openai_client(settings: Settings) -> OpenAI:
         max_retries=1,
     )
 
-def analyze_job_with_openai(job_text: str, settings: Settings) -> JobAnalysis:
+def analyze_job_with_openai(job_text: str, settings: Settings, target_position: str = "") -> JobAnalysis:
     """
     실제공고를 분석하여 기존 Pydantic 모델로 반환합니다.
     """
@@ -64,7 +66,8 @@ def analyze_job_with_openai(job_text: str, settings: Settings) -> JobAnalysis:
                     {
                         # 분석 규칙과 공고 데이터를 분리
                         "role": "user",
-                        "content": job_text,
+                        "content": json.dumps({"job_text": job_text, "target_position": target_position}, ensure_ascii=False)
+                        if target_position else job_text,
                     },
                 ],
                 # 수동 JSON 파싱 대신 기존 Pydantic 모델을 사용

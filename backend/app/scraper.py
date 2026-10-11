@@ -58,11 +58,22 @@ def extract_html(html: bytes, max_chars: int) -> tuple[str, str, bool]:
     for tag in soup.select('[hidden], [aria-hidden="true"]'):
         if tag.parent is not None:
             tag.decompose()
-    content = soup.find("article") or soup.find("main") or soup.body or soup
-    lines = [" ".join(line.split()) for line in content.get_text("\n", strip=True).splitlines()]
+    # 여러 article이 있는 채용 안내 페이지는 main 전체를 사용합니다.
+    main = soup.find("main")
+    articles = [tag for tag in soup.find_all("article") if tag.find_parent("article") is None]
+    if main is not None:
+        raw_text = main.get_text("\n", strip=True)
+    elif articles:
+        raw_text = "\n".join(tag.get_text("\n", strip=True) for tag in articles)
+    else:
+        raw_text = (soup.body or soup).get_text("\n", strip=True)
+    lines = [" ".join(line.split()) for line in raw_text.splitlines()]
     text = "\n".join(line for line in lines if line)
     if not text:
         raise PageFetchError("empty_content", "페이지에서 읽을 수 있는 본문을 찾지 못했습니다.")
+    # head의 채용 제목에도 회사·채용 유형 정보가 있으므로 원문에 포함합니다.
+    if title and title not in text:
+        text = title + "\n" + text
     return title, text[:max_chars], len(text) > max_chars
 
 

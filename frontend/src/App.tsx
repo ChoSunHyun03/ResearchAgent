@@ -16,6 +16,9 @@ interface JobAnalysis {
   requirements: string[];
   preferred: string[];
   keywords: string[];
+  analysis_status?: "ready" | "needs_selection" | "missing_details";
+  available_positions?: string[];
+  analysis_message?: string;
 }
 
 interface ResearchQuery{
@@ -105,6 +108,15 @@ function App() {
   const [webResearch, setWebResearch] = useState<WebResearch | null>(null);
   const [researchReport, setResearchReport] = useState<ResearchReport | null>(null);
   const [jobUrl, setJobUrl] = useState("");
+  const [targetPosition, setTargetPosition] = useState("");
+  const [inputNotice, setInputNotice] = useState("");
+
+  const resetResults = () => {
+    setResult(null);
+    setResearchPlan(null);
+    setWebResearch(null);
+    setResearchReport(null);
+  };
 
   const handleFetchJobPosting = async () => {
     // URL이 비어 있으면 실행하지 않음
@@ -121,6 +133,8 @@ function App() {
 
       // 추출된 텍스트를 기존의 text area에 자동 입력
       setJobText(data.job_text);
+      setInputNotice((data.warnings || []).join(" "));
+      resetResults();
     } catch {
       setError("채용공고 URL을 불러오지 못했습니다.");
     } finally {
@@ -128,7 +142,7 @@ function App() {
     }
   };
 
-  const handleAnalyze = async() => {
+  const handleAnalyze = async(selectedPosition: string = targetPosition) => {
     try{
       setLoading(true);
       setError("");
@@ -137,12 +151,12 @@ function App() {
       setWebResearch(null);
       setResearchReport(null);
 
-      const data = await analyzeJob(jobText);
+      const data = await analyzeJob(jobText, selectedPosition);
 
       setResult(data);
 
-    } catch{
-      setError("채용공고 분석에 실패했습니다. Backend 상태를 확인해주세요");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "채용공고 분석에 실패했습니다.");
 
     } finally{
       setLoading(false);
@@ -278,18 +292,30 @@ function App() {
         </button>
       </section>
 
+      <label htmlFor="target-position">지원 직무 (단일 직무 공고는 생략 가능)</label>
+      <input
+        id="target-position"
+        value={targetPosition}
+        maxLength={120}
+        disabled={loading}
+        placeholder="공고에 나온 직무명, 예: AI Engineer"
+        onChange={(event) => { setTargetPosition(event.target.value); resetResults(); }}
+      />
+      <p>전체 신입 채용공고는 지원 직무를 지정하세요. 없으면 분석 후 직무 선택을 안내합니다.</p>
+      {inputNotice && <p role="status">{inputNotice}</p>}
       <textarea
+        disabled={loading}
         rows={15}
         cols={80}
         value={jobText}
-        onChange={(event) => setJobText(event.target.value)}
+        onChange={(event) => { setJobText(event.target.value); setInputNotice(""); resetResults(); }}
         placeholder="채용공고 내용을 입력하세요"
       />
 
       <br />
       
       <button
-        onClick={handleAnalyze}
+        onClick={() => handleAnalyze()}
         disabled={!jobText || loading}
         >
           {loading ? "분석 중..." : "채용공고 분석"}
@@ -300,6 +326,17 @@ function App() {
         {result && (
           <section>
             <h2>분석 결과</h2>
+            {result.analysis_status && result.analysis_status !== "ready" && (
+              <div role="status">
+                <p>{result.analysis_message}</p>
+                {(result.available_positions || []).map((position) => (
+                  <button key={position} disabled={loading} onClick={() => {
+                    setTargetPosition(position);
+                    handleAnalyze(position);
+                  }}>선택하여 다시 분석: {position}</button>
+                ))}
+              </div>
+            )}
 
             <p>
               <strong>회사:</strong> {result.company}
@@ -338,7 +375,7 @@ function App() {
 
             <button
               onClick={handleCreateResearchPlan}
-              disabled={loading}
+              disabled={loading || (result.analysis_status !== undefined && result.analysis_status !== "ready") || !result.company || !result.position}
             >
               {loading ? "생성 중 ..." : "Research Plan 생성"}
             </button>

@@ -55,7 +55,7 @@ def load_mock_analysis(file_name: str) -> JobAnalysis:
     return JobAnalysis(**data)
 
 
-def analyze_job(job_text: str) -> JobAnalysis:
+def analyze_job(job_text: str, target_position: str = "") -> JobAnalysis:
     """
     채용공고를 분석.
 
@@ -74,12 +74,15 @@ def analyze_job(job_text: str) -> JobAnalysis:
     if len(cleaned_text) > 20000:
         raise ValueError("채용공고는 20,000자 이하로 입력해주세요.")
 
+    selected_position = target_position.strip()
+    if len(selected_position) > 120:
+        raise ValueError("지원 직무는 120자 이하로 입력해주세요.")
     settings = load_settings()
 
     if settings.use_mock:
         try:
             # 기존 개발용 분석을 유지
-            return load_mock_analysis("interx.json")
+            return finalize_job_analysis(load_mock_analysis("interx.json"), selected_position)
         except (OSError, ValueError):
             raise JobAnalysisError(
                 "mock_data",
@@ -87,12 +90,63 @@ def analyze_job(job_text: str) -> JobAnalysis:
             ) from None
 
     # 실패하면 오류를 반환하며 mock으로 자동 전환하지 않음
-    return analyze_job_with_openai(cleaned_text, settings)
+    if selected_position:
+        result = analyze_job_with_openai(cleaned_text, settings, selected_position)
+    else:
+        result = analyze_job_with_openai(cleaned_text, settings)
+    return finalize_job_analysis(result, selected_position)
+
+
+def finalize_job_analysis(result: JobAnalysis, target_position: str = "") -> JobAnalysis:
+    """여러 직무를 섞지 않고 선택·상세 정보 대기 상태를 서버에서도 지킵니다."""
+    key = lambda value: "".join(value.split()).casefold()
+    # 채용 유형은 지원 직무 후보가 아닙니다. 흔한 오분류를 서버에서 제외합니다.
+    non_roles = {key(value) for value in ("Junior Talent", "신입", "신입사원", "신입 채용",
+        "신입사원 채용", "경력", "인턴", "채용", "모집 분야", "전체 채용", "주니어 탤런트")}
+    candidates = list(dict.fromkeys(value.strip() for value in result.available_positions
+        if value.strip() and key(value) not in non_roles))
+    status = result.analysis_status
+    message = result.analysis_message
+    target = target_position.strip()
+    if len(candidates) > 1 and not target:
+        status = "needs_selection"
+        message = "여러 직무가 포함되어 있습니다. 지원 직무를 선택한 뒤 다시 분석해주세요."
+    elif target:
+        # 사용자가 지정한 직무와 모델이 반환한 직무가 다르면 진행하지 않습니다.
+        known = candidates or ([result.position] if result.position and key(result.position) not in non_roles else [])
+        if not known:
+            status = "missing_details"
+            message = message or "선택할 모집 직무와 상세 내용을 찾지 못했습니다. 해당 직무의 상세 공고를 추가해주세요."
+        elif key(target) not in {key(value) for value in known}:
+            status = "needs_selection"
+            message = "지원 직무를 공고에서 확인하지 못했습니다. 표시된 직무명을 선택하거나 상세 공고를 추가해주세요."
+        elif status == "ready" and key(result.position) != key(target):
+            status = "missing_details"
+            message = "선택한 직무의 상세 내용을 확인하지 못했습니다. 상세 공고를 추가해주세요."
+    if status == "needs_selection" and not candidates and not result.position.strip():
+        status = "missing_details"
+        message = "모집 직무 목록을 찾지 못했습니다. 상세 공고를 추가해주세요."
+    if key(result.position) in non_roles:
+        status = "missing_details"
+        message = "채용 유형만 확인되고 지원 직무가 없습니다. 직무별 상세 공고를 추가해주세요."
+    if status == "ready" and not result.position.strip():
+        status = "missing_details"
+        message = "모집 직무를 확인할 수 없습니다. 지원 직무와 상세 공고를 입력해주세요."
+    if status != "ready":
+        # 대기 상태에서는 다른 직무의 업무·조건을 화면과 Planner로 전달하지 않습니다.
+        return result.model_copy(update={"position": "", "responsibilities": [], "requirements": [],
+            "preferred": [], "keywords": [], "available_positions": candidates,
+            "analysis_status": status, "analysis_message": message or "지원 직무의 상세 공고를 확인해주세요."})
+    return result.model_copy(update={"available_positions": candidates})
+
 
 def create_research_plan(job_analysis: JobAnalysis) -> ResearchPlan:
     """
     설정에 따라 LLM 또는 기존 규칙 기반 계획을 생성합니다.
     """
+
+    if job_analysis.analysis_status != "ready":
+        raise ValueError("지원 직무를 선택하고 상세 공고를 분석한 뒤 계획을 생성해주세요.")
 
     # 대상이 불명확한 상태로 다른 회사 정보를 조사하지 않게 주의
     # 누락 시 공고를 보완하고 다시 분석 

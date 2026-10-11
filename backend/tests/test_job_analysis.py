@@ -119,7 +119,7 @@ class JobAnalysisTests(unittest.TestCase):
         ) as build:
             # 실제 API 대신 파싱 결과가 없는 응답을 만듬
             client = build.return_value.__enter__.return_value
-            client.responses.parse.return_vaule = SimpleNamespace(
+            client.responses.parse.return_value = SimpleNamespace(
                 status="completed",
                 output=[],
                 output_parsed=None,

@@ -167,3 +167,20 @@ class ScraperTests(unittest.TestCase):
             with self.assertRaises(PageFetchError) as caught:
                 fetch_page("https://example.com/")
         self.assertEqual(caught.exception.kind, "network")
+
+    def test_main_with_multiple_articles_keeps_hiring_sections(self):
+        html = '<html><head><title>가상회사 신입 채용</title></head><body><main><article>회사 소개</article><article>AI Engineer 주요 업무: 모델 개발</article><section>지원자격: 학사 이상</section></main></body></html>'.encode()
+        _, text, _ = extract_html(html, 20000)
+        self.assertIn("가상회사 신입 채용", text)
+        self.assertIn("AI Engineer", text)
+        self.assertIn("지원자격", text)
+
+    def test_multiple_articles_without_main_are_combined(self):
+        html = '<html><body><article>AI Engineer 업무: Python</article><article>AX PM 업무: 기획</article></body></html>'.encode()
+        _, text, _ = extract_html(html, 20000)
+        self.assertIn("AI Engineer", text)
+        self.assertIn("AX PM", text)
+
+    def test_title_alone_is_not_valid_body(self):
+        with self.assertRaises(PageFetchError):
+            extract_html(b'<html><head><title>Job</title></head><body></body></html>', 20000)

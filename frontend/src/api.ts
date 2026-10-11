@@ -14,7 +14,7 @@ export async function checkHealth() {
     return response.json();
 }
 
-export async function analyzeJob(jobText: string) {
+export async function analyzeJob(jobText: string, targetPosition: string = "") {
     const response = await fetch(
         `${API_BASE_URL}/api/jobs/analyze`,
         {
@@ -25,12 +25,14 @@ export async function analyzeJob(jobText: string) {
 
             body: JSON.stringify({
                 job_text: jobText,
+                target_position: targetPosition,
             }),
         }
     );
 
     if (!response.ok) {
-        throw new Error("채용공고 분석에 실패했습니다. 입력 데이터와 Backend 상태를 확인해주세요");
+        const body = await response.json().catch(() => null);
+        throw new Error(typeof body?.detail === "string" ? body.detail : "채용공고 분석에 실패했습니다.");
     }
 
     return response.json();

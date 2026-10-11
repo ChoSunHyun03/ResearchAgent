@@ -57,7 +57,7 @@ def analyze_job_posting(job: JobInput):
     기존 분석 API를 유지하면서 오류 유형을 구분합니다.
     """
     try:
-        return analyze_job(job.job_text)
+        return analyze_job(job.job_text, job.target_position)
 
     except ConfigurationError as error:
         # 서버 설정 문제를 입력 오류와 구분
@@ -165,7 +165,10 @@ def fetch_job_posting_api(job:JobUrlInput):
             str(job.job_url)
         )
 
-        return {"job_text": job_text}
+        warnings = []
+        if len(job_text.strip()) < 200:
+            warnings.append("추출된 내용이 짧습니다. 회사·모집 직무·업무·지원자격이 포함되어 있는지 확인해주세요.")
+        return {"job_text": job_text, "warnings": warnings}
     except ValueError as error:
         # scraper.py에서 URL 접근 실패가 발생한 경우 
         # 서버 내부 오류 500 대신

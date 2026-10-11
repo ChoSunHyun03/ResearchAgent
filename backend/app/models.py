@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 # 사용자가 입력한 채용 공공
 class JobInput(BaseModel):
     job_text: str
+    target_position: str = Field(default="", max_length=120)
 
 # 채용공고 URL 입력
 class JobUrlInput(BaseModel):
@@ -19,7 +20,11 @@ class JobAnalysis (BaseModel):
     responsibilities : list[str]
     requirements : list[str]
     preferred : list[str]
-    keywords : list[str]    
+    keywords : list[str]
+    # 기존 여섯 필드는 유지하고 분석의 진행 가능 여부를 추가합니다.
+    analysis_status: Literal["ready", "needs_selection", "missing_details"] = "ready"
+    available_positions: list[str] = Field(default_factory=list)
+    analysis_message: str = ""
 
 # 하나의 리서치 항목
 class ResearchQuery (BaseModel) :

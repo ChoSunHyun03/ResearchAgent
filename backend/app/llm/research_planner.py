@@ -1,3 +1,4 @@
+from backend.app.llm.usage import record_usage
 from openai import(
     APIError,
     APIConnectionError,
@@ -142,6 +143,8 @@ def create_research_plan_with_openai(
             "invalid_output",
             "조사 계획 응답을 해석하지 못했습니다.",
         ) from None
+
+    record_usage(response, settings.openai_model, "research_plan")
 
     for item in response.output:
         if item.type == "message":

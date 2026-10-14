@@ -135,7 +135,7 @@ def finalize_job_analysis(result: JobAnalysis, target_position: str = "") -> Job
     if status != "ready":
         # 대기 상태에서는 다른 직무의 업무·조건을 화면과 Planner로 전달하지 않습니다.
         return result.model_copy(update={"position": "", "responsibilities": [], "requirements": [],
-            "preferred": [], "keywords": [], "available_positions": candidates,
+            "preferred": [], "keywords": [], "competencies": [], "available_positions": candidates,
             "analysis_status": status, "analysis_message": message or "지원 직무의 상세 공고를 확인해주세요."})
     return result.model_copy(update={"available_positions": candidates})
 

@@ -21,7 +21,8 @@ JOB_ANALYSIS_PROMPT = """
 - 회사명이 없으면 company는 빈 문자열 ""로 반환하세요.
 - 직무명이 없으면 position은 빈 문자열 ""로 반환하세요.
 - 주요 업무는 responsibilities에 정리하세요.
-- 필수조건은 requirements에 정리하세요.
+- 자격요건과 공통 지원자격은 requirements에 정리하세요.
+- 필요 역량과 필수 역량은 competencies에 정리하세요.
 - 우대조건은 preferred에 정리하세요.
 - 목록 정보가 없으면 빈 배열 []로 반환하세요.
 - 우대조건을 필수조건으로 바꾸지 마세요.
@@ -54,7 +55,7 @@ RESEARCH_PLAN_PROMPT = """
 
 규칙:
 - company와 position은 입력값을 그대로 사용하세요.
-- responsibilities, requirements, preferred, keywords를 모두 고려하세요.
+- responsibilities, requirements, competencies, preferred, keywords를 모두 고려하세요.
 - 검색 항목은 5개 이상 7개 이하로 만드세요.
 - topic, query, reason을 각 항목에 작성하세요.
 - topic은 화면에 표시할 짧고 명확한 한국어 조사 주제로 작성하세요.

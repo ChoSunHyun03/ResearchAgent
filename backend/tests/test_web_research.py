@@ -19,7 +19,7 @@ def example_plan():
     ])
 
 
-async def post_json(path, data):
+async def post_json(path, data, return_headers=False):
     # 추가 HTTP 패키지 없이 실제 FastAPI ASGI 요청·응답 경계를 검증합니다.
     body = json.dumps(data).encode()
     messages = []
@@ -34,6 +34,9 @@ async def post_json(path, data):
     await app(scope, receive, send)
     status = next(item["status"] for item in messages if item["type"] == "http.response.start")
     payload = b"".join(item.get("body", b"") for item in messages if item["type"] == "http.response.body")
+    if return_headers:
+        headers = dict(next(item["headers"] for item in messages if item["type"] == "http.response.start"))
+        return status, json.loads(payload), headers
     return status, json.loads(payload)
 
 

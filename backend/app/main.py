@@ -1,3 +1,5 @@
+import json
+from backend.app.llm.usage import request_usage
 from fastapi import FastAPI,HTTPException
 # React와 FastAPI가 서로 다른 주소(port)를 사용할 때 브라우저가 API 요청을 허용할 수 있도록 CORS 설정
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +19,7 @@ from backend.app.research import (
     collect_web_sources,
     create_research_report,)
 
-from backend.app.scraper import fetch_job_posting
+from backend.app.job_postings import fetch_job_details
 
 from backend.app.config import ConfigurationError
 from backend.app.llm.openai_provider import JobAnalysisError
@@ -39,8 +41,23 @@ app.add_middleware(
                    "http://localhost:5174"],
     allow_credentials=True,  # 쿠키나 인증 정보 등을 포함한 요청을 허용
     allow_methods=["*"], # GET, POST, PUT, DELETE 등 모든 HTTP Method 허용
-    allow_headers=['*'], # 모든 HTTP Header 허용
+    allow_headers=['*'],
+    expose_headers=['X-LLM-Usage'], # 브라우저가 사용량 헤더를 읽을 수 있도록 허용
 )
+
+# 공유 목록을 사용해 비동기 middleware와 동기 endpoint 사이에서 사용량을 전달합니다.
+@app.middleware("http")
+async def include_usage_header(request, call_next):
+    records = []
+    token = request_usage.set(records)
+    try:
+        response = await call_next(request)
+        if records:
+            response.headers["X-LLM-Usage"] = json.dumps(records, ensure_ascii=True)
+        return response
+    finally:
+        request_usage.reset(token)
+
 
 @app.get("/health")
 def health_check():
@@ -160,15 +177,7 @@ def fetch_job_posting_api(job:JobUrlInput):
     웹페이지의 텍스트 내용을 반환한다.
     """
     try: 
-        # HttpUrl 객체를 문자열로 반환
-        job_text = fetch_job_posting(
-            str(job.job_url)
-        )
-
-        warnings = []
-        if len(job_text.strip()) < 200:
-            warnings.append("추출된 내용이 짧습니다. 회사·모집 직무·업무·지원자격이 포함되어 있는지 확인해주세요.")
-        return {"job_text": job_text, "warnings": warnings}
+        return fetch_job_details(str(job.job_url))
     except ValueError as error:
         # scraper.py에서 URL 접근 실패가 발생한 경우 
         # 서버 내부 오류 500 대신

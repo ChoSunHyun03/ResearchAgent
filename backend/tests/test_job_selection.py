@@ -38,6 +38,11 @@ class JobSelectionTests(unittest.TestCase):
         self.assertEqual(result.requirements, [])
         self.assertEqual(result.keywords, [])
 
+    def test_waiting_state_clears_competencies(self):
+        result = finalize_job_analysis(analysis(competencies=["모델 설계"], available_positions=["AI Engineer", "AX PM"]))
+        self.assertEqual(result.analysis_status, "needs_selection")
+        self.assertEqual(result.competencies, [])
+
     def test_selected_role_reaches_provider(self):
         with patch("backend.app.research.load_settings", return_value=settings()), patch("backend.app.research.analyze_job_with_openai", return_value=analysis(available_positions=["AI Engineer", "AX PM"])) as provider:
             result = analyze_job("  여러 직무 공고  ", " AI Engineer ")

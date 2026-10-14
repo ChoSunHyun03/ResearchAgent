@@ -2,7 +2,7 @@ import asyncio
 import unittest
 from unittest.mock import patch
 
-from backend.app.models import PageContent, WebResearch
+from backend.app.models import PageContent, WebResearch, JobPosting
 from backend.app.research import collect_web_sources, create_research_report
 from backend.app.scraper import PageFetchError
 from backend.tests.test_web_research import post_json
@@ -62,12 +62,12 @@ class SourceCollectionTests(unittest.TestCase):
         self.assertEqual(create_research_report(web).sections[0].summary, ["검색 요약"])
 
     def test_job_url_endpoint_retains_response_and_safe_errors(self):
-        with patch("backend.app.main.fetch_job_posting", return_value="공고 본문"):
+        with patch("backend.app.main.fetch_job_details", return_value=JobPosting(job_text="공고 본문", warnings=["수집 내용 확인"])):
             status, payload = asyncio.run(post_json("/api/jobs/fetch", {"job_url": "https://example.com/job"}))
         self.assertEqual(status, 200)
         self.assertEqual(payload["job_text"], "공고 본문")
         self.assertTrue(payload["warnings"])
-        with patch("backend.app.main.fetch_job_posting", side_effect=PageFetchError("unsafe_url", "내부 주소 차단")):
+        with patch("backend.app.main.fetch_job_details", side_effect=PageFetchError("unsafe_url", "내부 주소 차단")):
             status, payload = asyncio.run(post_json("/api/jobs/fetch", {"job_url": "http://127.0.0.1/"}))
         self.assertEqual(status, 400)
         self.assertEqual(payload["detail"], "내부 주소 차단")

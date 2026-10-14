@@ -77,8 +77,9 @@ def extract_html(html: bytes, max_chars: int) -> tuple[str, str, bool]:
     return title, text[:max_chars], len(text) > max_chars
 
 
-def fetch_page(url: str, max_chars: int = MAX_BODY_CHARS, seconds: float = PAGE_SECONDS) -> PageContent:
-    """리다이렉트마다 주소를 확인하고 크기 제한 안에서 HTML을 읽습니다."""
+def fetch_document(url: str, seconds: float = PAGE_SECONDS,
+                   content_types: frozenset[str] = frozenset({"text/html", "application/xhtml+xml"})) -> tuple[bytes, str]:
+    """리다이렉트마다 주소를 확인하고 크기 제한 안에서 문서를 읽습니다."""
     deadline = time.monotonic() + seconds
     current_url = url
     for hop in range(MAX_REDIRECTS + 1):
@@ -117,8 +118,8 @@ def fetch_page(url: str, max_chars: int = MAX_BODY_CHARS, seconds: float = PAGE_
             if not 200 <= response.status < 300:
                 raise PageFetchError("http", "페이지가 접근을 허용하지 않거나 HTTP 오류를 반환했습니다.")
             content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
-            if content_type not in {"text/html", "application/xhtml+xml"}:
-                raise PageFetchError("unsupported", "HTML 페이지 본문만 수집할 수 있습니다.")
+            if content_type not in content_types:
+                raise PageFetchError("unsupported", "이 문서의 형식은 지원하지 않습니다.")
             encoding = response.headers.get("Content-Encoding", "identity").strip().lower()
             if encoding not in {"", "identity", "gzip"}:
                 raise PageFetchError("unsupported", "이 페이지의 압축 형식은 지원하지 않습니다.")
@@ -144,9 +145,7 @@ def fetch_page(url: str, max_chars: int = MAX_BODY_CHARS, seconds: float = PAGE_
                 chunks.append(chunk)
             if decoder is not None and (not decoder.eof or decoder.unused_data):
                 raise PageFetchError("network", "페이지 압축 데이터를 완전히 읽지 못했습니다.")
-            title, text, truncated = extract_html(b"".join(chunks), max_chars)
-            return PageContent(status="success", final_url=current_url, title=title,
-                text=text, truncated=truncated, fetched_at=datetime.now(timezone.utc))
+            return b"".join(chunks), current_url
         except TimeoutError:
             raise PageFetchError("timeout", "페이지의 연결 또는 읽기 시간이 초과되었습니다.") from None
         except (HTTPError, OSError, zlib.error):
@@ -156,6 +155,13 @@ def fetch_page(url: str, max_chars: int = MAX_BODY_CHARS, seconds: float = PAGE_
                 response.close()
             pool.close()
     raise PageFetchError("redirect", "페이지 이동 횟수가 초과되었습니다.")
+
+
+def fetch_page(url: str, max_chars: int = MAX_BODY_CHARS, seconds: float = PAGE_SECONDS) -> PageContent:
+    html, final_url = fetch_document(url, seconds=seconds)
+    title, text, truncated = extract_html(html, max_chars)
+    return PageContent(status="success", final_url=final_url, title=title,
+                       text=text, truncated=truncated, fetched_at=datetime.now(timezone.utc))
 
 
 def fetch_job_posting(url: str) -> str:

@@ -1,3 +1,12 @@
+// 응답 헤더의 실제 토큰 사용량을 화면에 전달합니다. 추가 요청은 보내지 않습니다.
+async function readWithUsage(response: Response) {
+    const data = await response.json();
+    const header = response.headers.get("X-LLM-Usage");
+    let usage = [];
+    try { usage = header ? JSON.parse(header) : []; } catch { /* 사용량이 없어도 결과는 표시 */ }
+    return {...data, llm_usage: usage};
+}
+
 const API_BASE_URL = "http://localhost:8000";
 
 // 백엔드 서버가 정상적으로 실행 중인지 확인하는 함수
@@ -35,7 +44,7 @@ export async function analyzeJob(jobText: string, targetPosition: string = "") {
         throw new Error(typeof body?.detail === "string" ? body.detail : "채용공고 분석에 실패했습니다.");
     }
 
-    return response.json();
+    return readWithUsage(response);
 }
 
 export async function createResearchPlan(jobAnalysis: object) {
@@ -54,7 +63,7 @@ export async function createResearchPlan(jobAnalysis: object) {
         throw new Error("Research Plan 생성에 실패했습니다.");
     }
 
-    return response.json();
+    return readWithUsage(response);
 }
 
 export async function runWebResearch(researchPlan: object) {

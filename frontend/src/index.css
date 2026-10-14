@@ -11,3 +11,5 @@ button, input, textarea { font: inherit; }
 a { color: #3056ba; text-underline-offset: 3px; overflow-wrap: anywhere; }
 button, summary, a, input, textarea { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid #83a6fa; outline-offset: 4px; }
+
+h1, h2, h3 { word-break: keep-all; }

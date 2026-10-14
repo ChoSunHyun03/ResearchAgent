@@ -21,6 +21,7 @@ class JobAnalysis (BaseModel):
     requirements : list[str]
     preferred : list[str]
     keywords : list[str]
+    competencies: list[str] = Field(default_factory=list)
     # 기존 여섯 필드는 유지하고 분석의 진행 가능 여부를 추가합니다.
     analysis_status: Literal["ready", "needs_selection", "missing_details"] = "ready"
     available_positions: list[str] = Field(default_factory=list)
@@ -104,3 +105,23 @@ class ResearchReport(BaseModel) :
     company : str
     position : str
     sections : list[ReportSection]
+
+
+class PostingRole(BaseModel):
+    id: str
+    group: str
+    position: str
+    responsibilities: list[str]
+    requirements: list[str]
+    competencies: list[str]
+    preferred: list[str]
+    analysis_text: str
+    application_url: str
+
+
+class JobPosting(BaseModel):
+    job_text: str
+    company: str = ""
+    roles: list[PostingRole] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    source_url: str = ""

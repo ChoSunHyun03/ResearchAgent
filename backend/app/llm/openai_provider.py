@@ -1,3 +1,4 @@
+from backend.app.llm.usage import record_usage
 import json
 
 from openai import (
@@ -114,6 +115,8 @@ def analyze_job_with_openai(job_text: str, settings: Settings, target_position: 
             "invalid_output",
             "분석 결과를 JobAnalysis 형식으로 해석하지 못했습니다.",
         ) from None
+
+    record_usage(response, settings.openai_model, "job_analysis")
 
     # 거절 응답은 일반 분석 결과와 구분
     for item in response.output:

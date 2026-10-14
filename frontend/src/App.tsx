@@ -145,7 +145,6 @@ function App() {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [analysisCache, setAnalysisCache] = useState<Record<string, JobAnalysis>>({});
-  const [usageRecords, setUsageRecords] = useState<LLMUsage[]>([]);
   const selectedRole = posting?.roles.find(role => role.id === selectedRoleId);
   const groups = [...new Set(posting?.roles.map(role => role.group) ?? [])];
   const [positions, setPositions] = useState<string[]>([]);
@@ -188,7 +187,6 @@ function App() {
   const receiveAnalysis = async (text: string, position: string, cacheKey = "") => {
     const data: JobAnalysis = await analyzeJob(text, position);
     setResult(data);
-    setUsageRecords(previous => [...previous, ...(data.llm_usage ?? [])]);
     if (cacheKey && data.analysis_status === "ready") {
       setAnalysisCache(previous => ({...previous, [cacheKey]: data}));
     }
@@ -234,7 +232,6 @@ function App() {
     try {
       const plan: ResearchPlan = await createResearchPlan(result);
       setResearchPlan(plan);
-      setUsageRecords(previous => [...previous, ...(plan.llm_usage ?? [])]);
     }
     catch { setError("조사 항목을 준비하지 못했습니다. 다시 시도해 주세요."); }
     finally { setBusy(""); }
@@ -429,16 +426,6 @@ function App() {
           <a key={j} href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url} ↗</a>)}</div>}
       </article>)}
     </section>}
-    {usageRecords.length > 0 && <details className="usage-panel"><summary>이번 화면의 API 사용량 · 비용 확인</summary>
-      <p className="hint">실제 응답 토큰 기준 계산값입니다. USD, 세금·환율·별도 재시도 비용 제외. 새로고침하면 화면 집계가 초기화됩니다.</p>
-      <ul>{usageRecords.map((usage,i) => <li key={i}>
-        {usage.operation === "job_analysis" ? "직무 분석" : "조사 항목 생성"}: 입력 {usage.input_tokens.toLocaleString()} / 출력 {usage.output_tokens.toLocaleString()} 토큰
-        {usage.cached_input_tokens > 0 && ` (캐시 입력 ${usage.cached_input_tokens.toLocaleString()})`}
-        {usage.estimated_cost_usd !== null ? ` · $${Number(usage.estimated_cost_usd).toFixed(8)}` : " · 해당 모델의 요금 정보 없음"}
-      </li>)}</ul>
-      <p className="hint">계산 가능한 호출 합계: ${usageRecords.reduce((sum,item) => sum + Number(item.estimated_cost_usd ?? 0), 0).toFixed(8)}
-        {usageRecords.some(item => item.estimated_cost_usd === null) && " (요금 미등록 호출 제외)"}</p>
-    </details>}
     <footer>공고에 없는 조건은 추정하지 않습니다. 지원 직무를 확인한 뒤 기업 조사를 진행하세요.</footer>
   </main>;
 }
